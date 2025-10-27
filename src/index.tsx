@@ -1,15 +1,16 @@
 /* @refresh reload */
-import { render } from 'solid-js/web';
-import 'solid-devtools';
+import { render } from "solid-js/web";
+import App from "./App";
+import { createTheme, ThemeProvider } from "@suid/material";
 
-import App from './App';
+const theme = createTheme({
+  palette: {
+    secondary: {
+      main: "#b6b6b6"
+    }
+  }
+})
 
-const root = document.getElementById('root');
-
-if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
-  throw new Error(
-    'Root element not found. Did you forget to add it to your index.html? Or maybe the id attribute got misspelled?',
-  );
-}
-
-render(() => <App />, root!);
+render(() => <ThemeProvider theme={theme}>
+  <App />
+</ThemeProvider>, document.getElementById("root") as HTMLElement);
