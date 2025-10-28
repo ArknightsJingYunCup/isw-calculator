@@ -24,21 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - name: setup node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: 'pnpm'
+      - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: 🔨 Build Site
-        run: pnpm build
+        run: bun run build
 
       - name: ⏫ Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
