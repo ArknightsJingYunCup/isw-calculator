@@ -1,6 +1,6 @@
 import { Component, createSignal, For, Match, Show, Switch } from "solid-js";
 import "./App.css";
-import { BottomNavigation, BottomNavigationAction, Box, Button, Card, Checkbox, FormControl, IconButton, InputLabel, MenuItem, Modal, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, useMediaQuery } from "@suid/material";
+import { Dialog, TextField as KTextField, Checkbox as KCheckbox, Select } from "@kobalte/core";
 
 import { BannedOperator as BannedOperator, BannedOperatorInfos, BossOperation, BossOperationInfos, Collectible, EmergencyOperation, EmergencyOperationInfos, HiddenOperation, HiddenOperationInfos, KingsCollectible, Squad } from "./data/sarkaz";
 import { AddEmergencyRecordModal, EmergencyOperationRecord } from "./components/AddEmergencyRecordModal";
@@ -8,7 +8,6 @@ import { createStore } from "solid-js/store";
 import { AddBossRecordModal, BossOperationRecord } from "./components/AddBossRecordModal";
 import { readJson, saveJson } from "./lib";
 import { AddHiddenRecordModal, HiddenOperationRecord } from "./components/AddHiddenRecordModal";
-import { Delete } from "@suid/icons-material";
 
 type BannedOperatorRecord = {
   operator: BannedOperator,
@@ -121,7 +120,7 @@ const defaultStoreValue: Store = {
 };
 
 function App() {
-  const sm = useMediaQuery("(max-width: 600px)");
+  const [isMobile, setIsMobile] = createSignal(window.innerWidth <= 600);
 
   const [store, setStore] = createStore<Store>({ ...defaultStoreValue });
   // const [store, setStore] = createStore<Store>({ ...testStoreValue });
@@ -183,15 +182,8 @@ function App() {
     }));
   }
 
-  // 3) e) 结算时，若持有超过1件“国王”藏品，从第二件藏品开始每持有一件藏品扣除20分；触
-  //       发“诸王的冠冕”3层效果时，额外扣除40分；若集齐游戏内所有“国王”藏品，额外扣除
-  //       20分；
-  // 正赛：更改为 结算时，若持有超过1件“国王”藏品，从第二件藏品开始每持有一件藏品扣除20分；在“失落财宝”中选择《泰拉之王》时，额外扣除40分；若集齐游戏内所有“国王”藏品，额外扣除
-  //       20分；
-  //      
   const calcKingsCollectibleSum = () => {
     const kingsCollectibleCnt = store.kingsCollectibleRecords.reduce((sum, record) => sum + (record.owned ? 1 : 0), 0);
-    // const ownedCrown = store.kingsCollectibleRecords.find((record) => record.collectible == KingsCollectible.KingsCrown && record.owned);
     let score = 0;
     if (kingsCollectibleCnt > 1) {
       score = (kingsCollectibleCnt - 1) * -20;
@@ -205,29 +197,20 @@ function App() {
     return score
   }
 
-  /// Others ///
-
-  // 3) f) 结算时，若持有“希望时代的涂鸦”，则每个藏品额外获得3分加分；
   const collectibleScore = () => store.collectible == Collectible.DoodleInTheEraOfHope ? 3 : 0;
   const calcCollectionsScore = () => {
     return store.collectionsCnt * collectibleScore();
   }
 
-  // 3) a) 作战中，每击杀一个隐藏敌人（包括“鸭爵”、“高普尼克”、“流泪小子”与“圆仔”），额外获
-  //       得10分加分；
   const calcHiddenScore = () => {
     return store.killedHiddenCnt * 10;
   }
 
-  // 3) b) 每局游戏有8次刷新节点的机会，若选择蓝图测绘分队，则提升至15次。结算分数时，
-  //        若本局游戏中刷新节点次数超过规定，每超出的一次刷新节点行为额外扣除50分。特
-  //        殊地，持有“先知长角”且生效时，将节点刷新为“命运所指”的行为不计入刷新次数；
   const maxRefreshCnt = () => store.squad == Squad.BlueprintSurveyingSquad ? 15 : 8;
   const calcRefreshScore = () => {
     return store.refreshCnt > maxRefreshCnt() ? (store.refreshCnt - maxRefreshCnt()) * -50 : 0;
   }
 
-  // 3) c) 每局游戏的源石锭余额减少总数超过40时，每额外减少1源石锭余额，额外扣除50分；
   const calcWithdrawScore = () => {
     return store.withdrawCnt > 40 ? (store.withdrawCnt - 40) * -50 : 0;
   }
@@ -245,49 +228,60 @@ function App() {
 
   // 开局设置
   const OpeningPart: Component = () => <>
-    {/* 开局设置 */}
-    <Card sx={{ display: "flex", flexShrink: 0, flexDirection: "column", gap: 1, padding: 2, zIndex: 20 }}>
-      <Typography variant="h6">开局设置</Typography>
-      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "stretch" }}>
-        <Box sx={{ minWidth: 150, flexGrow: 1 }}>
-          <FormControl fullWidth>
-            <InputLabel id="squad-select-label">开局分队</InputLabel>
-            <Select
-              labelId="squad-select-label"
-              id="squad-select"
-              value={store.squad || ''} // use `|| ''` to prevent error
-              label="开局分队"
-              onChange={(e) => {
-                setStore("squad", e.target.value);
-              }}
-            >
-              <For each={Object.values(Squad)}>{(squad) => <>
-                <MenuItem value={squad}>{squad}</MenuItem>
-              </>}</For>
-            </Select>
-          </FormControl>
-        </Box>
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 z-20">
+      <h6 class="text-xl font-semibold">开局设置</h6>
+      <div class="flex gap-4 flex-wrap justify-stretch">
+        <div class="min-w-[150px] flex-grow">
+          <Select.Root
+            value={store.squad || ''}
+            onChange={(value) => setStore("squad", value as Squad)}
+            options={Object.values(Squad)}
+            placeholder="开局分队"
+            itemComponent={(props) => (
+              <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
+              </Select.Item>
+            )}
+          >
+            <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
+              <Select.Value<string>>
+                {(state) => state.selectedOption() || "开局分队"}
+              </Select.Value>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                <Select.Listbox />
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+        </div>
 
-        <Box sx={{ minWidth: 150, flexGrow: 1 }}>
-          <FormControl fullWidth>
-            <InputLabel id="demo-simple-select-label">开局藏品</InputLabel>
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={store.collectible || ''}
-              label="开局藏品"
-              onChange={(e) => {
-                setStore("collectible", e.target.value);
-              }}
-            >
-              <For each={Object.values(Collectible)}>{(squad) => <>
-                <MenuItem value={squad}>{squad}</MenuItem>
-              </>}</For>
-            </Select>
-          </FormControl>
-        </Box>
-      </Box >
-    </Card>
+        <div class="min-w-[150px] flex-grow">
+          <Select.Root
+            value={store.collectible || ''}
+            onChange={(value) => setStore("collectible", value as Collectible)}
+            options={Object.values(Collectible)}
+            placeholder="开局藏品"
+            itemComponent={(props) => (
+              <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
+              </Select.Item>
+            )}
+          >
+            <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
+              <Select.Value<string>>
+                {(state) => state.selectedOption() || "开局藏品"}
+              </Select.Value>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                <Select.Listbox />
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+        </div>
+      </div>
+    </div>
   </>
 
   // 紧急作战
@@ -309,63 +303,84 @@ function App() {
     <AddEmergencyRecordModal open={emergencyOpen} onClose={() => {
       setEmergencyOpen(false);
     }} onAddRecord={addEmergencyRecord} />
-    {/* 紧急作战 */}
-    <Card sx={{ display: "flex", flexShrink: 0, flexDirection: "column", gap: 1, padding: 2 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Typography variant="h6">紧急作战</Typography>
-        <Button variant="contained" size="small" onClick={() => {
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+      <div class="flex items-center gap-4">
+        <h6 class="text-xl font-semibold">紧急作战</h6>
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
           setEmergencyOpen(true)
         }}>
           添加
-        </Button>
-        <Box sx={{ flexGrow: 1 }} />
-        <Typography>该部分得分: {calcEmergencySum().toFixed(1)}</Typography>
-      </Box>
-      <Box sx={{ display: "flex", justifyContent: "stretch", gap: 1 }}>
-        {/* 紧急作战 */}
-        <TableContainer component={Box} sx={{ flex: 1 }}>
-          <Table aria-label="simple table" size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ minWidth: 60 }}>名称</TableCell>
-                <TableCell>无漏</TableCell>
-                <TableCell>刷新</TableCell>
-                <TableCell align="right">分数</TableCell>
-                <TableCell align="center">操作</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        </button>
+        <div class="flex-grow" />
+        <span>该部分得分: {calcEmergencySum().toFixed(1)}</span>
+      </div>
+      <div class="flex justify-stretch gap-2">
+        <div class="flex-1 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="min-w-[60px] text-left p-2">名称</th>
+                <th class="text-left p-2">无漏</th>
+                <th class="text-left p-2">刷新</th>
+                <th class="text-right p-2">分数</th>
+                <th class="text-center p-2">操作</th>
+              </tr>
+            </thead>
+            <tbody>
               <For each={store.emergencyRecords}>
                 {(item, idx) => (
-                  <TableRow
-                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                  >
-                    <TableCell component="th" scope="row">
-                      {item.operation}
-                    </TableCell>
-                    <TableCell>
-                      <Checkbox size="small" checked={item.perfect} onChange={(_, v) => {
-                        updateEmergencyRecord(idx(), { ...item, perfect: v });
-                        console.log(item)
-                      }} />
-                    </TableCell>
-                    <TableCell>
-                      <Checkbox size="small" checked={item.refresh} onChange={(_, v) => {
-                        updateEmergencyRecord(idx(), { ...item, refresh: v });
-                      }} />
-                    </TableCell>
-                    <TableCell align="right">{calcEmergencyRecordScore(idx()).toFixed(1)}</TableCell>
-                    <TableCell align="center">
-                      <IconButton color="error" onClick={() => { removeEmergencyRecord(idx()) }}><Delete /></IconButton>
-                    </TableCell>
-                  </TableRow>
+                  <tr class="border-b last:border-0">
+                    <td class="p-2">{item.operation}</td>
+                    <td class="p-2">
+                      <KCheckbox.Root
+                        checked={item.perfect}
+                        onChange={(v) => {
+                          updateEmergencyRecord(idx(), { ...item, perfect: v });
+                        }}
+                        class="inline-flex items-center"
+                      >
+                        <KCheckbox.Input class="sr-only" />
+                        <KCheckbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center ui-checked:bg-blue-500 ui-checked:border-blue-500">
+                          <KCheckbox.Indicator>
+                            <svg class="w-3 h-3 text-white" viewBox="0 0 12 10" fill="none">
+                              <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </KCheckbox.Indicator>
+                        </KCheckbox.Control>
+                      </KCheckbox.Root>
+                    </td>
+                    <td class="p-2">
+                      <KCheckbox.Root
+                        checked={item.refresh}
+                        onChange={(v) => {
+                          updateEmergencyRecord(idx(), { ...item, refresh: v });
+                        }}
+                        class="inline-flex items-center"
+                      >
+                        <KCheckbox.Input class="sr-only" />
+                        <KCheckbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center ui-checked:bg-blue-500 ui-checked:border-blue-500">
+                          <KCheckbox.Indicator>
+                            <svg class="w-3 h-3 text-white" viewBox="0 0 12 10" fill="none">
+                              <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </KCheckbox.Indicator>
+                        </KCheckbox.Control>
+                      </KCheckbox.Root>
+                    </td>
+                    <td class="text-right p-2">{calcEmergencyRecordScore(idx()).toFixed(1)}</td>
+                    <td class="text-center p-2">
+                      <button class="text-red-500 hover:text-red-700 p-1" onClick={() => { removeEmergencyRecord(idx()) }}>
+                        <span class="i-mdi-delete text-xl"></span>
+                      </button>
+                    </td>
+                  </tr>
                 )}
               </For>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-    </Card >
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </>
 
   // 隐藏作战
@@ -387,61 +402,70 @@ function App() {
     <AddHiddenRecordModal open={hiddenOpen} onClose={() => {
       setHiddenOpen(false);
     }} onAddRecord={addHiddenRecord} />
-    {/* 隐藏作战 */}
-    <Card sx={{ display: "flex", flexShrink: 0, flexDirection: "column", gap: 1, padding: 2 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Typography variant="h6">隐藏作战</Typography>
-        <Button variant="contained" size="small" onClick={() => {
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+      <div class="flex items-center gap-4">
+        <h6 class="text-xl font-semibold">隐藏作战</h6>
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
           setHiddenOpen(true)
         }}>
           添加
-        </Button>
-        <Box sx={{ flexGrow: 1 }} />
-        <Typography>该部分得分: {calcHiddenSum().toFixed(1)}</Typography>
-      </Box>
-      <Box sx={{ display: "flex", justifyContent: "stretch", gap: 1 }}>
-        {/* 隐藏作战 */}
-        <TableContainer component={Box} sx={{ flex: 1 }}>
-          <Table aria-label="simple table" size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>名称</TableCell>
-                <TableCell>无漏</TableCell>
-                <TableCell align="right">分数</TableCell>
-                <TableCell align="center">操作</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        </button>
+        <div class="flex-grow" />
+        <span>该部分得分: {calcHiddenSum().toFixed(1)}</span>
+      </div>
+      <div class="flex justify-stretch gap-2">
+        <div class="flex-1 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="text-left p-2">名称</th>
+                <th class="text-left p-2">无漏</th>
+                <th class="text-right p-2">分数</th>
+                <th class="text-center p-2">操作</th>
+              </tr>
+            </thead>
+            <tbody>
               <For each={store.hiddenRecords}>
                 {(item, idx) => (
-                  <TableRow
-                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                  >
-                    <TableCell component="th" scope="row" sx={{ color: item.emergency ? 'red' : 'auto' }}>
+                  <tr class="border-b last:border-0">
+                    <td class="p-2" classList={{ "text-red-500": item.emergency }}>
                       {item.operation}
                       <Show when={item.emergency}>
                         （紧急）
                       </Show>
-                    </TableCell>
-                    <TableCell>
-                      <Checkbox size="small" checked={item.perfect} onChange={(_, v) => {
-                        updateHiddenRecord(idx(), { ...item, perfect: v });
-                      }} />
-                    </TableCell>
-                    <TableCell align="right">{calcHiddenRecordScore(idx()).toFixed(1)}</TableCell>
-                    <TableCell align="center">
-                      <IconButton color="error" onClick={() => removeHiddenRecord(idx())}>
-                        <Delete />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                    <td class="p-2">
+                      <KCheckbox.Root
+                        checked={item.perfect}
+                        onChange={(v) => {
+                          updateHiddenRecord(idx(), { ...item, perfect: v });
+                        }}
+                        class="inline-flex items-center"
+                      >
+                        <KCheckbox.Input class="sr-only" />
+                        <KCheckbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center ui-checked:bg-blue-500 ui-checked:border-blue-500">
+                          <KCheckbox.Indicator>
+                            <svg class="w-3 h-3 text-white" viewBox="0 0 12 10" fill="none">
+                              <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </KCheckbox.Indicator>
+                        </KCheckbox.Control>
+                      </KCheckbox.Root>
+                    </td>
+                    <td class="text-right p-2">{calcHiddenRecordScore(idx()).toFixed(1)}</td>
+                    <td class="text-center p-2">
+                      <button class="text-red-500 hover:text-red-700 p-1" onClick={() => removeHiddenRecord(idx())}>
+                        <span class="i-mdi-delete text-xl"></span>
+                      </button>
+                    </td>
+                  </tr>
                 )}
               </For>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-    </Card >
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </>
 
   // 领袖作战
@@ -455,173 +479,211 @@ function App() {
     ))
   }
   const BossPart = () => <>
-    {/* 领袖作战 */}
     <AddBossRecordModal open={bossOpen} onClose={() => { setBossOpen(false); }} onAddRecord={addBossRecord} />
-    <Card sx={{ display: "flex", flexShrink: 0, flexDirection: "column", gap: 1, padding: 2 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Typography variant="h6">领袖作战</Typography>
-        <Button variant="contained" size="small" onClick={() => { setBossOpen(true) }}>
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+      <div class="flex items-center gap-4">
+        <h6 class="text-xl font-semibold">领袖作战</h6>
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => { setBossOpen(true) }}>
           添加
-        </Button>
-        <Box sx={{ flexGrow: 1 }} />
-        <Typography>该部分得分: {calcBossSum().toFixed(1)}</Typography>
-      </Box>
+        </button>
+        <div class="flex-grow" />
+        <span>该部分得分: {calcBossSum().toFixed(1)}</span>
+      </div>
 
-      {/* 领袖作战 */}
-      <TableContainer component={Box} sx={{ flex: 1 }}>
-        <Table aria-label="simple table" size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>名称</TableCell>
-              <TableCell>&nbsp;&nbsp;&nbsp;&nbsp;</TableCell>
-              <TableCell>&nbsp;&nbsp;&nbsp;&nbsp;</TableCell>
-              <TableCell align="right">分数</TableCell>
-              <TableCell align="center">操作</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+      <div class="flex-1 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b">
+              <th class="text-left p-2">名称</th>
+              <th class="p-2">&nbsp;&nbsp;&nbsp;&nbsp;</th>
+              <th class="p-2">&nbsp;&nbsp;&nbsp;&nbsp;</th>
+              <th class="text-right p-2">分数</th>
+              <th class="text-center p-2">操作</th>
+            </tr>
+          </thead>
+          <tbody>
             <For each={store.bossRecords}>
               {(item, idx) => (
-                <TableRow
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                >
-                  <TableCell component="th" scope="row" sx={{ color: item.chaos ? 'red' : 'auto' }}>
+                <tr class="border-b last:border-0">
+                  <td class="p-2" classList={{ "text-red-500": item.chaos }}>
                     {item.operation}
                     <Show when={item.chaos}>
                       （混乱）
                     </Show>
-                  </TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell align="right">{calcBossRecordScore(idx()).toFixed(1)}</TableCell>
-                  <TableCell align="center">
-                    <IconButton color="error" onClick={() => removeBossRecord(idx())}>
-                      <Delete />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                  <td class="p-2"></td>
+                  <td class="p-2"></td>
+                  <td class="text-right p-2">{calcBossRecordScore(idx()).toFixed(1)}</td>
+                  <td class="text-center p-2">
+                    <button class="text-red-500 hover:text-red-700 p-1" onClick={() => removeBossRecord(idx())}>
+                      <span class="i-mdi-delete text-xl"></span>
+                    </button>
+                  </td>
+                </tr>
               )}
             </For>
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Card>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </>
 
   // 阵容补偿
   const OperatorPart = () => <>
-    {/* 阵容补偿 */}
-    <Card sx={{ display: "flex", flexShrink: 0, flexDirection: "column", gap: 1, padding: 2 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Typography variant="h6">阵容补偿</Typography>
-        <Box sx={{ flexGrow: 1 }} />
-        <Typography>该部分得分: {calcBannedSum()}</Typography>
-      </Box>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+      <div class="flex items-center gap-4">
+        <h6 class="text-xl font-semibold">阵容补偿</h6>
+        <div class="flex-grow" />
+        <span>该部分得分: {calcBannedSum()}</span>
+      </div>
+      <div class="flex flex-wrap gap-2">
         <For each={store.bannedOperatorRecords}>{(item) => <>
-          <Button variant="outlined" color={item.banned ? "success" : "secondary"} onClick={() => {
-            toggleBannedOperator(item.operator)
-          }}>
+          <button
+            class="px-3 py-1 rounded border transition-colors"
+            classList={{
+              "border-green-500 text-green-600 hover:bg-green-50": item.banned,
+              "border-gray-400 text-gray-600 hover:bg-gray-50": !item.banned
+            }}
+            onClick={() => {
+              toggleBannedOperator(item.operator)
+            }}
+          >
             {item.operator}
             <Show when={item.banned}>
-              <span style={{ color: "green" }}>（+{BannedOperatorInfos[item.operator]}）</span>
+              <span class="text-green-600">（+{BannedOperatorInfos[item.operator]}）</span>
             </Show>
-          </Button>
+          </button>
         </>}</For>
-      </Box>
-    </Card>
+      </div>
+    </div>
   </>
 
   // 国王收藏品
   const KingsCollectivesPart = () => <>
-    {/* 国王套 */}
-    <Card sx={{ display: "flex", flexShrink: 0, flexDirection: "column", gap: 1, padding: 2 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Typography variant="h6">国王套</Typography>
-        <Box sx={{ flexGrow: 1 }} />
-        <Typography>该部分得分: {calcKingsCollectibleSum()}</Typography>
-      </Box>
-      <Button variant={store.kingOfTerra ? "contained" : "outlined"} color={store.kingOfTerra ? "error" : "secondary"} onClick={() => {
-        setStore("kingOfTerra", v => !v)
-        setStore("kingsCollectibleRecords", (collectibles) => collectibles.map((item) => {
-          return { ...item, owned: store.kingOfTerra }
-        }));
-      }}>
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+      <div class="flex items-center gap-4">
+        <h6 class="text-xl font-semibold">国王套</h6>
+        <div class="flex-grow" />
+        <span>该部分得分: {calcKingsCollectibleSum()}</span>
+      </div>
+      <button
+        class="px-3 py-2 rounded border transition-colors"
+        classList={{
+          "bg-red-500 text-white hover:bg-red-600": store.kingOfTerra,
+          "border-gray-400 text-gray-600 hover:bg-gray-50": !store.kingOfTerra
+        }}
+        onClick={() => {
+          setStore("kingOfTerra", v => !v)
+          setStore("kingsCollectibleRecords", (collectibles) => collectibles.map((item) => {
+            return { ...item, owned: store.kingOfTerra }
+          }));
+        }}
+      >
         泰拉之王
-      </Button>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+      </button>
+      <div class="flex flex-wrap gap-2">
         <For each={store.kingsCollectibleRecords}>{(item) => <>
-          <Button variant="outlined" color={item.owned ? "error" : "secondary"} onClick={() => {
-            if (item.owned) {
-              setStore("kingOfTerra", false)
-            }
-            toggleKingsCollectible(item.collectible)
-          }}>
+          <button
+            class="px-3 py-1 rounded border transition-colors"
+            classList={{
+              "border-red-500 text-red-600 hover:bg-red-50": item.owned,
+              "border-gray-400 text-gray-600 hover:bg-gray-50": !item.owned
+            }}
+            onClick={() => {
+              if (item.owned) {
+                setStore("kingOfTerra", false)
+              }
+              toggleKingsCollectible(item.collectible)
+            }}
+          >
             {item.collectible}
-          </Button>
+          </button>
         </>}</For>
-      </Box>
-    </Card>
+      </div>
+    </div>
   </>
 
   // 结算 & 其他
   const SumPart: Component = () => <>
-    {/* 结算部分（其他部分） */}
-    <Card sx={{ display: "flex", flexDirection: "column", gap: 1, flexGrow: 1, padding: 2, flexShrink: 0 }}>
-      <Typography variant="h6" sx={{ paddingBottom: 1 }}>结算</Typography>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, flex: 1 }}>
-        <TextField
-          label="藏品数量"
-          type="number"
-          value={store.collectionsCnt}
-          onChange={(_, value) => setStore("collectionsCnt", parseInt(value) || 0)}
-          helperText={
-            store.collectible == Collectible.DoodleInTheEraOfHope
-              ? <span style={{ color: "green" }}>{store.collectionsCnt} * {collectibleScore()} = {calcCollectionsScore()}</span>
-              : <span style={{ color: "red" }}>无希望时代的涂鸦</span>
-          }
-        />
-        <TextField
-          label="击杀隐藏数量"
-          type="number"
-          value={store.killedHiddenCnt}
-          onChange={(_, value) => setStore("killedHiddenCnt", parseInt(value) || 0)}
-          helperText={`${store.killedHiddenCnt} * 10 = ${calcHiddenScore()}`}
-        />
-        <TextField
-          label="刷新次数"
-          type="number"
-          value={store.refreshCnt}
-          onChange={(_, value) => setStore("refreshCnt", parseInt(value) || 0)}
-          helperText={
-            store.refreshCnt <= maxRefreshCnt()
-              ? <span style={{ color: "green" }}>&lt;= {maxRefreshCnt()}</span>
-              : <span style={{ color: "red" }}>{store.refreshCnt - maxRefreshCnt()} x -50 = {calcRefreshScore()}</span>
-          }
-        />
-        <TextField
-          label="取钱数量"
-          type="number"
-          value={store.withdrawCnt}
-          onChange={(_, value) => setStore("withdrawCnt", parseInt(value) || 0)}
-          sx={{
-            color: store.withdrawCnt < 40 ? "green" : "red"
-          }}
-          helperText={
-            store.withdrawCnt <= 40
-              ? <span style={{ color: "green" }}>&lt;= 40</span>
-              : <span style={{ color: "red" }}>{store.withdrawCnt - 40} x -50 = {calcWithdrawScore()}</span>
-          }
-        />
-        <TextField
-          label="结算分"
-          type="number"
-          value={store.score}
-          onChange={(_, value) => setStore("score", parseInt(value) || 0)}
-          helperText={`${store.score} x 0.5 = ${calcScore()}`}
-        />
-      </Box>
-    </Card>
+    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow shrink-0">
+      <h6 class="text-xl font-semibold pb-2">结算</h6>
+      <div class="flex flex-col gap-2 flex-1">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">藏品数量</label>
+          <input
+            type="number"
+            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+            value={store.collectionsCnt}
+            onInput={(e) => setStore("collectionsCnt", parseInt(e.currentTarget.value) || 0)}
+          />
+          <span class="text-xs" classList={{
+            "text-green-600": store.collectible == Collectible.DoodleInTheEraOfHope,
+            "text-red-600": store.collectible != Collectible.DoodleInTheEraOfHope
+          }}>
+            {store.collectible == Collectible.DoodleInTheEraOfHope
+              ? `${store.collectionsCnt} * ${collectibleScore()} = ${calcCollectionsScore()}`
+              : "无希望时代的涂鸦"
+            }
+          </span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">击杀隐藏数量</label>
+          <input
+            type="number"
+            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+            value={store.killedHiddenCnt}
+            onInput={(e) => setStore("killedHiddenCnt", parseInt(e.currentTarget.value) || 0)}
+          />
+          <span class="text-xs text-gray-600">{store.killedHiddenCnt} * 10 = {calcHiddenScore()}</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">刷新次数</label>
+          <input
+            type="number"
+            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+            value={store.refreshCnt}
+            onInput={(e) => setStore("refreshCnt", parseInt(e.currentTarget.value) || 0)}
+          />
+          <span class="text-xs" classList={{
+            "text-green-600": store.refreshCnt <= maxRefreshCnt(),
+            "text-red-600": store.refreshCnt > maxRefreshCnt()
+          }}>
+            {store.refreshCnt <= maxRefreshCnt()
+              ? `<= ${maxRefreshCnt()}`
+              : `${store.refreshCnt - maxRefreshCnt()} x -50 = ${calcRefreshScore()}`
+            }
+          </span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">取钱数量</label>
+          <input
+            type="number"
+            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+            value={store.withdrawCnt}
+            onInput={(e) => setStore("withdrawCnt", parseInt(e.currentTarget.value) || 0)}
+          />
+          <span class="text-xs" classList={{
+            "text-green-600": store.withdrawCnt <= 40,
+            "text-red-600": store.withdrawCnt > 40
+          }}>
+            {store.withdrawCnt <= 40
+              ? "<= 40"
+              : `${store.withdrawCnt - 40} x -50 = ${calcWithdrawScore()}`
+            }
+          </span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">结算分</label>
+          <input
+            type="number"
+            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+            value={store.score}
+            onInput={(e) => setStore("score", parseInt(e.currentTarget.value) || 0)}
+          />
+          <span class="text-xs text-gray-600">{store.score} x 0.5 = {calcScore()}</span>
+        </div>
+      </div>
+    </div>
   </>
 
 
@@ -639,13 +701,10 @@ function App() {
   return <>
     <Switch>
       {/* 窄屏界面 */}
-      <Match when={sm()}>
-        <Box sx={{
-          display: "flex", height: "100%", boxSizing: "border-box",
-          flexDirection: "column"
-        }}>
+      <Match when={isMobile()}>
+        <div class="flex h-full box-border flex-col">
           <OpeningPart />
-          <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1, gap: 1, overflowY: "auto", padding: 1 }}>
+          <div class="flex flex-col flex-grow gap-2 overflow-y-auto p-2">
             <Switch>
               <Match when={tab() == Tab.Operation}>
                 <EmergencyPart />
@@ -660,83 +719,83 @@ function App() {
                 <SumPart />
               </Match>
             </Switch>
-          </Box>
-          <Paper sx={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
-            <Box sx={{ display: "flex", gap: 1, padding: 1 }}>
+          </div>
+          <div class="flex flex-col gap-2 shrink-0 bg-white border-t shadow-lg">
+            <div class="flex gap-2 p-2">
               <span>总分：
-                <span style={{ "font-size": "x-large" }}>{calcTotalSum()}</span>
+                <span class="text-2xl">{calcTotalSum()}</span>
               </span>
-              <Box sx={{ flexGrow: 1 }} />
-              <Button variant="contained" size="small" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</Button>
-              <Modal open={copyJsonOpen()} onClose={() => setCopyJsonOpen(false)}>
-                <Paper sx={{
-                  position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-                  width: "50%", maxHeight: "80%",
-                  padding: 2,
-                  display: "flex", flexDirection: "column",
-                  gap: 1
-                }}>
-                  <TextField label="数据 json"
-                    multiline
-                    minRows={4}
-                    maxRows={4} value={json()} />
-                  <Box sx={{ display: "flex", gap: 2, justifyContent: "end" }}>
-                    <Button variant="outlined" onClick={() => setCopyJsonOpen(false)}>关闭</Button>
-                  </Box>
-                </Paper>
-              </Modal>
-              <Button variant="outlined" size="small" onClick={async () => {
+              <div class="flex-grow" />
+              <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
+
+              <Dialog.Root open={copyJsonOpen()} onOpenChange={setCopyJsonOpen}>
+                <Dialog.Portal>
+                  <Dialog.Overlay class="fixed inset-0 bg-black/50" />
+                  <div class="fixed inset-0 flex items-center justify-center p-4">
+                    <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col gap-2">
+                      <Dialog.Title class="text-lg font-semibold">数据 JSON</Dialog.Title>
+                      <textarea class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none" value={json()} readonly />
+                      <div class="flex gap-4 justify-end">
+                        <Dialog.CloseButton class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">关闭</Dialog.CloseButton>
+                      </div>
+                    </Dialog.Content>
+                  </div>
+                </Dialog.Portal>
+              </Dialog.Root>
+
+              <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm" onClick={async () => {
                 setJson(JSON.stringify(store));
                 setCopyJsonOpen(true);
-              }}>复制 json</Button>
-              <Modal open={loadJsonOpen()} onClose={() => setLoadJsonOpen(false)}>
-                <Paper sx={{
-                  position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-                  width: "50%", maxHeight: "80%",
-                  padding: 2,
-                  display: "flex", flexDirection: "column",
-                  gap: 1
-                }}>
-                  <TextField label="数据 json"
-                    multiline
-                    minRows={4}
-                    maxRows={4} value={json()} onChange={(_, v) => setJson(v)} />
-                  <Box sx={{ display: "flex", gap: 2, justifyContent: "end" }}>
-                    <Button variant="contained" onClick={() => {
-                      setStore(JSON.parse(json()))
-                      setLoadJsonOpen(false);
-                    }}>确定</Button>
-                    <Button variant="outlined" onClick={() => setLoadJsonOpen(false)}>取消</Button>
-                  </Box>
-                </Paper>
-              </Modal>
-              <Button variant="outlined" size="small" onClick={async () => {
+              }}>复制 json</button>
+
+              <Dialog.Root open={loadJsonOpen()} onOpenChange={setLoadJsonOpen}>
+                <Dialog.Portal>
+                  <Dialog.Overlay class="fixed inset-0 bg-black/50" />
+                  <div class="fixed inset-0 flex items-center justify-center p-4">
+                    <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col gap-2">
+                      <Dialog.Title class="text-lg font-semibold">导入 JSON</Dialog.Title>
+                      <textarea
+                        class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none"
+                        value={json()}
+                        onInput={(e) => setJson(e.currentTarget.value)}
+                      />
+                      <div class="flex gap-4 justify-end">
+                        <button class="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" onClick={() => {
+                          setStore(JSON.parse(json()))
+                          setLoadJsonOpen(false);
+                        }}>确定</button>
+                        <Dialog.CloseButton class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseButton>
+                      </div>
+                    </Dialog.Content>
+                  </div>
+                </Dialog.Portal>
+              </Dialog.Root>
+
+              <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm" onClick={async () => {
                 setLoadJsonOpen(true);
-              }}>导入 json</Button>
-            </Box>
-            <BottomNavigation
-              showLabels
-              sx={{ width: "100%" }}
-              value={tab()}
-              onChange={(_, newValue) => setTab(newValue)}
-            >
-              <For each={Object.values(Tab)}>{(item) => <BottomNavigationAction label={item} value={item} />}</For>
-            </BottomNavigation>
-          </Paper>
-        </Box>
+              }}>导入 json</button>
+            </div>
+            <div class="flex w-full border-t">
+              <For each={Object.values(Tab)}>{(item) =>
+                <button
+                  class="flex-1 py-3 text-sm transition-colors"
+                  classList={{
+                    "bg-blue-500 text-white": tab() === item,
+                    "bg-white text-gray-700 hover:bg-gray-50": tab() !== item
+                  }}
+                  onClick={() => setTab(item)}
+                >
+                  {item}
+                </button>
+              }</For>
+            </div>
+          </div>
+        </div>
       </Match>
       {/* 宽屏界面 */}
-      <Match when={!sm()}>
-        <Box sx={{
-          display: "flex", gap: 1, height: "100%", boxSizing: "border-box",
-          padding: 1
-        }}>
-          <Box sx={{
-            display: "flex", flexDirection: "column",
-            gap: 1, flex: 1,
-            height: "100%", overflowY: "scroll",
-            paddingRight: 1
-          }}>
+      <Match when={!isMobile()}>
+        <div class="flex gap-2 h-full box-border p-2">
+          <div class="flex flex-col gap-2 flex-1 h-full overflow-y-scroll pr-2">
             <OpeningPart />
 
             <EmergencyPart />
@@ -747,27 +806,27 @@ function App() {
 
             <KingsCollectivesPart />
 
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", minWidth: 200, gap: 1 }}>
+          </div>
+          <div class="flex flex-col min-w-[200px] gap-2">
             <SumPart />
-            <Card sx={{ display: "flex", flexDirection: "column", gap: 1, padding: 2 }}>
-              <Typography sx={{ fontSize: "1.5rem" }}>总计：{calcTotalSum().toFixed(1)}</Typography>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Button variant="contained" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</Button>
-                <Button variant="outlined" onClick={async () => {
+            <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow">
+              <span class="text-2xl">总计：{calcTotalSum().toFixed(1)}</span>
+              <div class="flex gap-2">
+                <button class="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
+                <button class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50" onClick={async () => {
                   let content = JSON.stringify(store)
                   await saveJson(content);
-                }}>保存</Button>
-                <Button variant="outlined" onClick={async () => {
+                }}>保存</button>
+                <button class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50" onClick={async () => {
                   const content = await readJson();
                   let data = JSON.parse(content);
                   console.log(data)
                   setStore(data as Store)
-                }}>加载</Button>
-              </Box>
-            </Card>
-          </Box>
-        </Box>
+                }}>加载</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </Match>
     </Switch>
   </>;

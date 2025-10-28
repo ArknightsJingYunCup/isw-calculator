@@ -1,6 +1,6 @@
 import { Accessor, Component, For } from "solid-js";
 import { EmergencyOperation, EmergencyOperationInfos, Level } from "../data/sarkaz";
-import { Box, Button, Modal, Paper, Typography } from "@suid/material";
+import { Dialog } from "@kobalte/core";
 
 // 刷新 *30% / 死仇刷新 *10%
 // 无漏 *120%
@@ -16,39 +16,37 @@ export const AddEmergencyRecordModal: Component<{
   onAddRecord: (operation: EmergencyOperationRecord) => void
 }> = ({ open, onClose, onAddRecord }) => {
   return <>
-    <Modal open={open()} onClose={() => {
-      onClose();
-    }}>
-      <Paper sx={{
-        position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-        width: "50%", maxHeight: "80%",
-        padding: 2,
-        display: "flex", flexDirection: "column"
-      }}>
-        <Typography variant="h6" sx={{ marginBottom: 1 }}>添加紧急作战</Typography>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" }}>
-          <For each={[Level.Third, Level.Fourth, Level.Fifth, Level.Sixth]}>{(level) => <>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <span>{level}</span>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                <For each={Object.values(EmergencyOperation).filter((operation) => EmergencyOperationInfos[operation].level == level)}>{(operation) => <>
-                  <Button variant="outlined" onClick={() => {
-                    onAddRecord({
-                      operation,
-                      refresh: false,
-                      perfect: false,
-                    } as EmergencyOperationRecord);
-                    onClose();
-                  }}>{operation}</Button>
-                </>}</For>
-              </Box>
-            </Box>
-          </>}</For>
-        </Box>
-        <Box sx={{ display: "flex", gap: 2, justifyContent: "end" }}>
-          <Button variant="outlined" onClick={onClose}>取消</Button>
-        </Box>
-      </Paper>
-    </Modal>
+    <Dialog.Root open={open()} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay class="fixed inset-0 bg-black/50 z-50" />
+        <div class="fixed inset-0 flex items-center justify-center p-4 z-50">
+          <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col">
+            <Dialog.Title class="text-xl font-semibold mb-2">添加紧急作战</Dialog.Title>
+            <div class="flex flex-col gap-4 overflow-y-auto">
+              <For each={[Level.Third, Level.Fourth, Level.Fifth, Level.Sixth]}>{(level) => <>
+                <div class="flex flex-col gap-2">
+                  <span class="font-medium">{level}</span>
+                  <div class="flex flex-wrap gap-2">
+                    <For each={Object.values(EmergencyOperation).filter((operation) => EmergencyOperationInfos[operation].level == level)}>{(operation) => <>
+                      <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50" onClick={() => {
+                        onAddRecord({
+                          operation,
+                          refresh: false,
+                          perfect: false,
+                        } as EmergencyOperationRecord);
+                        onClose();
+                      }}>{operation}</button>
+                    </>}</For>
+                  </div>
+                </div>
+              </>}</For>
+            </div>
+            <div class="flex gap-4 justify-end mt-4">
+              <Dialog.CloseButton class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseButton>
+            </div>
+          </Dialog.Content>
+        </div>
+      </Dialog.Portal>
+    </Dialog.Root>
   </>
 }
