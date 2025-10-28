@@ -1,44 +1,25 @@
-export async function saveJson(content: string) {
-  const blob = new Blob([content], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+export class Modifier {
+  fn: (v: number) => number;
 
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'data.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  constructor(fn: (v: number) => number) {
+    this.fn = fn;
+  }
 
-  URL.revokeObjectURL(url);
+  apply(v: number): number {
+    return this.fn(v)
+  }
+
+  wrap(inner: Modifier): Modifier {
+    return new Modifier((v) => this.apply(inner.apply(v)))
+  }
 }
 
-export async function readJson(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    input.accept = '.json';
-    input.multiple = false;
-
-    input.addEventListener('change', (event: Event) => {
-      const target = event.target as HTMLInputElement;
-      const file = target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e: ProgressEvent<FileReader>) => {
-          if (typeof e.target?.result === 'string') {
-            resolve(e.target?.result);
-          } else {
-            reject(new Error("Failed to read the file"));
-          }
-        };
-        reader.readAsText(file); // You can use readAsDataURL or readAsArrayBuffer as needed
-      }
-
-    });
-
-    document.body.appendChild(input);
-    input.click();
-    document.body.removeChild(input);
-  })
+interface Field {
+  label: string
 }
+
+type NumberField = number & Field;
+type BooleanField = boolean & Field;
+type EnumLike = Record<string, string | number>;
+type EnumSelectField<E extends EnumLike> = E & Field;
+type EnumSetField<E extends EnumLike> = [E] & Field;
