@@ -1,7 +1,7 @@
-import { Accessor, Component, createEffect, createSignal, For, Match, Show, Switch } from "solid-js";
-import { Dialog, TextField, Select } from "@kobalte/core";
-import { Button } from "@kobalte/core/button";
-import { Checkbox } from "@kobalte/core/checkbox";
+import { Accessor, Component, createEffect, createSignal, For, Match, Show, Switch, Index } from "solid-js";
+import { Dialog } from "@ark-ui/solid/dialog";
+import { Checkbox } from "@ark-ui/solid/checkbox";
+import { Portal } from "solid-js/web";
 
 import { createStore } from "solid-js/store";
 import { enumKeys, readJson, saveJson } from "../lib/utils";
@@ -371,10 +371,10 @@ export function JingYunCup4() {
     onAddRecord: (operation: EmergencyOperationRecord) => void
   }> = ({ open, onClose, onAddRecord }) => {
     return <>
-      <Dialog.Root open={open()} onOpenChange={(isOpen) => !isOpen && onClose()}>
-        <Dialog.Portal>
-          <Dialog.Overlay class="fixed inset-0 bg-black/50 z-50" />
-          <div class="fixed inset-0 flex items-center justify-center p-4 z-50">
+      <Dialog.Root open={open()} onOpenChange={(details) => !details.open && onClose()}>
+        <Portal>
+          <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
+          <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
             <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col">
               <Dialog.Title class="text-xl font-semibold mb-2">添加紧急作战</Dialog.Title>
               <div class="flex flex-col gap-4 overflow-y-auto">
@@ -385,7 +385,7 @@ export function JingYunCup4() {
                       <span class="font-medium">第 {idx() + 1} 层：{level}</span>
                       <div class="flex flex-wrap gap-2">
                         <For each={levelEmergencyOperationMap[level]}>{(operation) => <>
-                          <Button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                          <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
                             classList={{
                               "border-dashed": operation == EmergencyOperation.其他,
                             }} onClick={() => {
@@ -394,7 +394,7 @@ export function JingYunCup4() {
                                 perfect: false,
                               } as EmergencyOperationRecord);
                               onClose();
-                            }}>{operation}</Button>
+                            }}>{operation}</button>
                         </>}</For>
                       </div>
                     </div>
@@ -402,11 +402,11 @@ export function JingYunCup4() {
                 }}</For>
               </div>
               <div class="flex gap-4 justify-end mt-4">
-                <Dialog.CloseButton class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseButton>
+                <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseTrigger>
               </div>
             </Dialog.Content>
-          </div>
-        </Dialog.Portal>
+          </Dialog.Positioner>
+        </Portal>
       </Dialog.Root>
     </>
   }
@@ -429,11 +429,11 @@ export function JingYunCup4() {
     <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
       <div class="flex items-center gap-4">
         <h6 class="text-xl font-semibold">紧急作战</h6>
-        <Button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
           setEmergencyOpen(true)
         }}>
           添加
-        </Button>
+        </button>
         <div class="flex-grow" />
         <span>该部分得分: {calcEmergencySum().toFixed(1)}</span>
       </div>
@@ -459,25 +459,25 @@ export function JingYunCup4() {
                     <tr class="border-b last:border-0">
                       <td class="p-2">{record.operation}</td>
                       <td class="p-2">
-                        <Checkbox
+                        <Checkbox.Root
                           checked={record.perfect}
-                          onChange={(v) => {
-                            updateEmergencyRecord(idx(), { ...record, perfect: v });
+                          onCheckedChange={(details) => {
+                            updateEmergencyRecord(idx(), { ...record, perfect: !!details.checked });
                           }}
                           class="inline-flex items-center"
                         >
-                          <Checkbox.Input class="sr-only" />
-                          <Checkbox.Control class="w-5 h-5 border-1 border-gray-400 rounded flex items-center justify-center data-[checked]:bg-[#2C7FFF] text-white">
+                          <Checkbox.Control class="w-5 h-5 border-1 border-gray-400 rounded flex items-center justify-center data-[state='checked']:bg-[#2C7FFF] text-white">
                             <Checkbox.Indicator>
                               <div class="i-mdi-check text-md"></div>
                             </Checkbox.Indicator>
                           </Checkbox.Control>
-                        </Checkbox>
+                          <Checkbox.HiddenInput />
+                        </Checkbox.Root>
                       </td>
                       <td class="text-right p-2">20 + <span class={record.perfect ? "" : "text-red-500"}>{bonus.toFixed(1)}</span> = {(20 + bonus).toFixed(1)}</td>
                       <td class="text-center p-2">
-                        <button class="text-red-500 hover:text-red-700 p-1" onClick={() => { removeEmergencyRecord(idx()) }}>
-                          <span class="i-mdi-delete text-xl"></span>
+                        <button class="text-red-500 hover:text-red-700 p-1" onClick={() => { removeEmergencyRecord(idx()) }} aria-label="删除">
+                          <div class="i-mdi-delete text-xl" />
                         </button>
                       </td>
                     </tr>
@@ -661,7 +661,7 @@ export function JingYunCup4() {
           const operator = LimitedOperator[operatorKey];
 
           return <>
-            <Button
+            <button
               class="px-3 py-1 rounded border transition-colors"
               classList={{
                 "border-green-500 text-green-600 hover:bg-green-50": store.limitedOperators.includes(operator),
@@ -676,7 +676,7 @@ export function JingYunCup4() {
               }}
             >
               {operator}（{limitedOperatorCostMap[operator]}）
-            </Button>
+            </button>
           </>
         }}</For>
       </div>
@@ -812,19 +812,19 @@ export function JingYunCup4() {
               <div class="flex-grow" />
               <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
 
-              <Dialog.Root open={copyJsonOpen()} onOpenChange={setCopyJsonOpen}>
-                <Dialog.Portal>
-                  <Dialog.Overlay class="fixed inset-0 bg-black/50" />
-                  <div class="fixed inset-0 flex items-center justify-center p-4">
+              <Dialog.Root open={copyJsonOpen()} onOpenChange={(details) => setCopyJsonOpen(details.open)}>
+                <Portal>
+                  <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
+                  <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
                     <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col gap-2">
                       <Dialog.Title class="text-lg font-semibold">数据 JSON</Dialog.Title>
                       <textarea class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none" value={json()} readonly />
                       <div class="flex gap-4 justify-end">
-                        <Dialog.CloseButton class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">关闭</Dialog.CloseButton>
+                        <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">关闭</Dialog.CloseTrigger>
                       </div>
                     </Dialog.Content>
-                  </div>
-                </Dialog.Portal>
+                  </Dialog.Positioner>
+                </Portal>
               </Dialog.Root>
 
               <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm" onClick={async () => {
@@ -832,10 +832,10 @@ export function JingYunCup4() {
                 setCopyJsonOpen(true);
               }}>复制 json</button>
 
-              <Dialog.Root open={loadJsonOpen()} onOpenChange={setLoadJsonOpen}>
-                <Dialog.Portal>
-                  <Dialog.Overlay class="fixed inset-0 bg-black/50" />
-                  <div class="fixed inset-0 flex items-center justify-center p-4">
+              <Dialog.Root open={loadJsonOpen()} onOpenChange={(details) => setLoadJsonOpen(details.open)}>
+                <Portal>
+                  <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
+                  <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
                     <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col gap-2">
                       <Dialog.Title class="text-lg font-semibold">导入 JSON</Dialog.Title>
                       <textarea
@@ -848,11 +848,11 @@ export function JingYunCup4() {
                           setStore(JSON.parse(json()))
                           setLoadJsonOpen(false);
                         }}>确定</button>
-                        <Dialog.CloseButton class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseButton>
+                        <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseTrigger>
                       </div>
                     </Dialog.Content>
-                  </div>
-                </Dialog.Portal>
+                  </Dialog.Positioner>
+                </Portal>
               </Dialog.Root>
 
               <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm" onClick={async () => {

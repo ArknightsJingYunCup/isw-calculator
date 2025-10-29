@@ -1,5 +1,8 @@
-import { Component, createSignal, For, Match, Show, Switch } from "solid-js";
-import { Dialog, TextField as KTextField, Checkbox as KCheckbox, Select } from "@kobalte/core";
+import { Component, createSignal, For, Match, Show, Switch, Index } from "solid-js";
+import { Dialog } from "@ark-ui/solid/dialog";
+import { Checkbox } from "@ark-ui/solid/checkbox";
+import { Select, createListCollection } from "@ark-ui/solid/select";
+import { Portal } from "solid-js/web";
 
 import { BannedOperator as BannedOperator, BannedOperatorInfos, BossOperation, BossOperationInfos, Collectible, EmergencyOperation, EmergencyOperationInfos, HiddenOperation, HiddenOperationInfos, KingsCollectible, Squad } from "../data/sarkaz";
 import { AddEmergencyRecordModal, EmergencyOperationRecord } from "../components/AddEmergencyRecordModal";
@@ -233,57 +236,63 @@ export function JingYunCup2() {
   }
 
   // 开局设置
+  const squadCollection = createListCollection({ items: Object.values(Squad) });
+  const collectibleCollection = createListCollection({ items: Object.values(Collectible) });
   const OpeningPart: Component = () => <>
     <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 z-20">
       <h6 class="text-xl font-semibold">开局设置</h6>
       <div class="flex gap-4 flex-wrap justify-stretch">
         <div class="min-w-[150px] flex-grow">
           <Select.Root
-            value={store.squad || ''}
-            onChange={(value) => setStore("squad", value as Squad)}
-            options={Object.values(Squad)}
-            placeholder="开局分队"
-            itemComponent={(props) => (
-              <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
-                <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
-              </Select.Item>
-            )}
+            collection={squadCollection}
+            value={store.squad ? [store.squad] : []}
+            onValueChange={(e) => setStore("squad", (e.items[0] as Squad | undefined) || null)}
           >
-            <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
-              <Select.Value<string>>
-                {(state) => state.selectedOption() || "开局分队"}
-              </Select.Value>
-            </Select.Trigger>
-            <Select.Portal>
-              <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
-                <Select.Listbox />
-              </Select.Content>
-            </Select.Portal>
+            <Select.Control>
+              <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
+                <Select.ValueText placeholder="开局分队" />
+              </Select.Trigger>
+            </Select.Control>
+            <Portal>
+              <Select.Positioner>
+                <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto z-20">
+                  <Index each={squadCollection.items}>
+                    {(item) => (
+                      <Select.Item item={item()} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                        <Select.ItemText>{item()}</Select.ItemText>
+                      </Select.Item>
+                    )}
+                  </Index>
+                </Select.Content>
+              </Select.Positioner>
+            </Portal>
           </Select.Root>
         </div>
 
         <div class="min-w-[150px] flex-grow">
           <Select.Root
-            value={store.collectible || ''}
-            onChange={(value) => setStore("collectible", value as Collectible)}
-            options={Object.values(Collectible)}
-            placeholder="开局藏品"
-            itemComponent={(props) => (
-              <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
-                <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
-              </Select.Item>
-            )}
+            collection={collectibleCollection}
+            value={store.collectible ? [store.collectible] : []}
+            onValueChange={(e) => setStore("collectible", (e.items[0] as Collectible | undefined) || null)}
           >
-            <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
-              <Select.Value<string>>
-                {(state) => state.selectedOption() || "开局藏品"}
-              </Select.Value>
-            </Select.Trigger>
-            <Select.Portal>
-              <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
-                <Select.Listbox />
-              </Select.Content>
-            </Select.Portal>
+            <Select.Control>
+              <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
+                <Select.ValueText placeholder="开局藏品" />
+              </Select.Trigger>
+            </Select.Control>
+            <Portal>
+              <Select.Positioner>
+                <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto z-20">
+                  <Index each={collectibleCollection.items}>
+                    {(item) => (
+                      <Select.Item item={item()} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                        <Select.ItemText>{item()}</Select.ItemText>
+                      </Select.Item>
+                    )}
+                  </Index>
+                </Select.Content>
+              </Select.Positioner>
+            </Portal>
           </Select.Root>
         </div>
       </div>
@@ -338,45 +347,45 @@ export function JingYunCup2() {
                   <tr class="border-b last:border-0">
                     <td class="p-2">{item.operation}</td>
                     <td class="p-2">
-                      <KCheckbox.Root
+                      <Checkbox.Root
                         checked={item.perfect}
-                        onChange={(v) => {
-                          updateEmergencyRecord(idx(), { ...item, perfect: v });
+                        onCheckedChange={(details) => {
+                          updateEmergencyRecord(idx(), { ...item, perfect: !!details.checked });
                         }}
                         class="inline-flex items-center"
                       >
-                        <KCheckbox.Input class="sr-only" />
-                        <KCheckbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center ui-checked:bg-blue-500 ui-checked:border-blue-500">
-                          <KCheckbox.Indicator>
+                        <Checkbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center data-[checked]:bg-blue-500 data-[checked]:border-blue-500">
+                          <Checkbox.Indicator>
                             <svg class="w-3 h-3 text-white" viewBox="0 0 12 10" fill="none">
                               <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                          </KCheckbox.Indicator>
-                        </KCheckbox.Control>
-                      </KCheckbox.Root>
+                          </Checkbox.Indicator>
+                        </Checkbox.Control>
+                        <Checkbox.HiddenInput />
+                      </Checkbox.Root>
                     </td>
                     <td class="p-2">
-                      <KCheckbox.Root
+                      <Checkbox.Root
                         checked={item.refresh}
-                        onChange={(v) => {
-                          updateEmergencyRecord(idx(), { ...item, refresh: v });
+                        onCheckedChange={(details) => {
+                          updateEmergencyRecord(idx(), { ...item, refresh: !!details.checked });
                         }}
                         class="inline-flex items-center"
                       >
-                        <KCheckbox.Input class="sr-only" />
-                        <KCheckbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center ui-checked:bg-blue-500 ui-checked:border-blue-500">
-                          <KCheckbox.Indicator>
+                        <Checkbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center data-[checked]:bg-blue-500 data-[checked]:border-blue-500">
+                          <Checkbox.Indicator>
                             <svg class="w-3 h-3 text-white" viewBox="0 0 12 10" fill="none">
                               <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                          </KCheckbox.Indicator>
-                        </KCheckbox.Control>
-                      </KCheckbox.Root>
+                          </Checkbox.Indicator>
+                        </Checkbox.Control>
+                        <Checkbox.HiddenInput />
+                      </Checkbox.Root>
                     </td>
                     <td class="text-right p-2">{calcEmergencyRecordScore(idx()).toFixed(1)}</td>
                     <td class="text-center p-2">
-                      <button class="text-red-500 hover:text-red-700 p-1" onClick={() => { removeEmergencyRecord(idx()) }}>
-                        <span class="i-mdi-delete text-xl"></span>
+                      <button class="text-red-500 hover:text-red-700 p-1" onClick={() => { removeEmergencyRecord(idx()) }} aria-label="删除">
+                        <div class="i-mdi-delete text-xl" />
                       </button>
                     </td>
                   </tr>
@@ -441,27 +450,27 @@ export function JingYunCup2() {
                       </Show>
                     </td>
                     <td class="p-2">
-                      <KCheckbox.Root
+                      <Checkbox.Root
                         checked={item.perfect}
-                        onChange={(v) => {
-                          updateHiddenRecord(idx(), { ...item, perfect: v });
+                        onCheckedChange={(details) => {
+                          updateHiddenRecord(idx(), { ...item, perfect: !!details.checked });
                         }}
                         class="inline-flex items-center"
                       >
-                        <KCheckbox.Input class="sr-only" />
-                        <KCheckbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center ui-checked:bg-blue-500 ui-checked:border-blue-500">
-                          <KCheckbox.Indicator>
+                        <Checkbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center data-[checked]:bg-blue-500 data-[checked]:border-blue-500">
+                          <Checkbox.Indicator>
                             <svg class="w-3 h-3 text-white" viewBox="0 0 12 10" fill="none">
                               <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                          </KCheckbox.Indicator>
-                        </KCheckbox.Control>
-                      </KCheckbox.Root>
+                          </Checkbox.Indicator>
+                        </Checkbox.Control>
+                        <Checkbox.HiddenInput />
+                      </Checkbox.Root>
                     </td>
                     <td class="text-right p-2">{calcHiddenRecordScore(idx()).toFixed(1)}</td>
                     <td class="text-center p-2">
-                      <button class="text-red-500 hover:text-red-700 p-1" onClick={() => removeHiddenRecord(idx())}>
-                        <span class="i-mdi-delete text-xl"></span>
+                      <button class="text-red-500 hover:text-red-700 p-1" onClick={() => removeHiddenRecord(idx())} aria-label="删除">
+                        <div class="i-mdi-delete text-xl" />
                       </button>
                     </td>
                   </tr>
@@ -521,8 +530,8 @@ export function JingYunCup2() {
                   <td class="p-2"></td>
                   <td class="text-right p-2">{calcBossRecordScore(idx()).toFixed(1)}</td>
                   <td class="text-center p-2">
-                    <button class="text-red-500 hover:text-red-700 p-1" onClick={() => removeBossRecord(idx())}>
-                      <span class="i-mdi-delete text-xl"></span>
+                    <button class="text-red-500 hover:text-red-700 p-1" onClick={() => removeBossRecord(idx())} aria-label="删除">
+                      <div class="i-mdi-delete text-xl" />
                     </button>
                   </td>
                 </tr>
@@ -734,19 +743,19 @@ export function JingYunCup2() {
               <div class="flex-grow" />
               <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
 
-              <Dialog.Root open={copyJsonOpen()} onOpenChange={setCopyJsonOpen}>
-                <Dialog.Portal>
-                  <Dialog.Overlay class="fixed inset-0 bg-black/50" />
-                  <div class="fixed inset-0 flex items-center justify-center p-4">
+              <Dialog.Root open={copyJsonOpen()} onOpenChange={(details) => setCopyJsonOpen(details.open)}>
+                <Portal>
+                  <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
+                  <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
                     <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col gap-2">
                       <Dialog.Title class="text-lg font-semibold">数据 JSON</Dialog.Title>
                       <textarea class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none" value={json()} readonly />
                       <div class="flex gap-4 justify-end">
-                        <Dialog.CloseButton class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">关闭</Dialog.CloseButton>
+                        <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">关闭</Dialog.CloseTrigger>
                       </div>
                     </Dialog.Content>
-                  </div>
-                </Dialog.Portal>
+                  </Dialog.Positioner>
+                </Portal>
               </Dialog.Root>
 
               <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm" onClick={async () => {
@@ -754,10 +763,10 @@ export function JingYunCup2() {
                 setCopyJsonOpen(true);
               }}>复制 json</button>
 
-              <Dialog.Root open={loadJsonOpen()} onOpenChange={setLoadJsonOpen}>
-                <Dialog.Portal>
-                  <Dialog.Overlay class="fixed inset-0 bg-black/50" />
-                  <div class="fixed inset-0 flex items-center justify-center p-4">
+              <Dialog.Root open={loadJsonOpen()} onOpenChange={(details) => setLoadJsonOpen(details.open)}>
+                <Portal>
+                  <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
+                  <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
                     <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col gap-2">
                       <Dialog.Title class="text-lg font-semibold">导入 JSON</Dialog.Title>
                       <textarea
@@ -770,11 +779,11 @@ export function JingYunCup2() {
                           setStore(JSON.parse(json()))
                           setLoadJsonOpen(false);
                         }}>确定</button>
-                        <Dialog.CloseButton class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseButton>
+                        <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseTrigger>
                       </div>
                     </Dialog.Content>
-                  </div>
-                </Dialog.Portal>
+                  </Dialog.Positioner>
+                </Portal>
               </Dialog.Root>
 
               <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm" onClick={async () => {
