@@ -6,6 +6,7 @@ import { Portal } from "solid-js/web";
 import { createStore } from "solid-js/store";
 import { enumKeys, readJson, saveJson } from "../lib/utils";
 import { createMediaQuery } from "@solid-primitives/media";
+import { createWithdrawInput } from "../components";
 
 // MARK: LimitedOperator
 enum LimitedOperator {
@@ -140,6 +141,7 @@ type EmergencyOperationRecord = {
 type Store = {
   limitedOperators: LimitedOperator[],
   emergencyRecords: EmergencyOperationRecord[],
+  withdrawCnt: number,
 }
 
 // type Store = {
@@ -172,11 +174,13 @@ const testStoreValue: Store = {
       perfect: false,
     }
   ],
+  withdrawCnt: 61,
 };
 
 const defaultStoreValue: Store = {
   limitedOperators: [],
   emergencyRecords: [],
+  withdrawCnt: 0,
 };
 
 export function JingYunCup4() {
@@ -683,93 +687,62 @@ export function JingYunCup4() {
     </div>
   </>
 
+  const { score: withdrawScore, ui: withdrawUI } = createWithdrawInput(
+    () => store.withdrawCnt, (v) => setStore("withdrawCnt", v),
+    40, -50
+  );
+
   // MARK: UI: 结算 & 其他
-  // const SumPart: Component = () => <>
-  //   <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow shrink-0">
-  //     <h6 class="text-xl font-semibold pb-2">结算</h6>
-  //     <div class="flex flex-col gap-2 flex-1">
-  //       <div class="flex flex-col gap-1">
-  //         <label class="text-sm text-gray-600">藏品数量</label>
-  //         <input
-  //           type="number"
-  //           class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
-  //           value={store.collectionsCnt}
-  //           onInput={(e) => setStore("collectionsCnt", parseInt(e.currentTarget.value) || 0)}
-  //         />
-  //         <span class="text-xs" classList={{
-  //           "text-green-600": store.collectible == Collectible.DoodleInTheEraOfHope,
-  //           "text-red-600": store.collectible != Collectible.DoodleInTheEraOfHope
-  //         }}>
-  //           {store.collectible == Collectible.DoodleInTheEraOfHope
-  //             ? `${store.collectionsCnt} * ${collectibleScore()} = ${calcCollectionsScore()}`
-  //             : "无希望时代的涂鸦"
-  //           }
-  //         </span>
-  //       </div>
-  //       <div class="flex flex-col gap-1">
-  //         <label class="text-sm text-gray-600">击杀隐藏数量</label>
-  //         <input
-  //           type="number"
-  //           class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
-  //           value={store.killedHiddenCnt}
-  //           onInput={(e) => setStore("killedHiddenCnt", parseInt(e.currentTarget.value) || 0)}
-  //         />
-  //         <span class="text-xs text-gray-600">{store.killedHiddenCnt} * 10 = {calcHiddenScore()}</span>
-  //       </div>
-  //       <div class="flex flex-col gap-1">
-  //         <label class="text-sm text-gray-600">刷新次数</label>
-  //         <input
-  //           type="number"
-  //           class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
-  //           value={store.refreshCnt}
-  //           onInput={(e) => setStore("refreshCnt", parseInt(e.currentTarget.value) || 0)}
-  //         />
-  //         <span class="text-xs" classList={{
-  //           "text-green-600": store.refreshCnt <= maxRefreshCnt(),
-  //           "text-red-600": store.refreshCnt > maxRefreshCnt()
-  //         }}>
-  //           {store.refreshCnt <= maxRefreshCnt()
-  //             ? `<= ${maxRefreshCnt()}`
-  //             : `${store.refreshCnt - maxRefreshCnt()} x -50 = ${calcRefreshScore()}`
-  //           }
-  //         </span>
-  //       </div>
-  //       <div class="flex flex-col gap-1">
-  //         <label class="text-sm text-gray-600">取钱数量</label>
-  //         <input
-  //           type="number"
-  //           class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
-  //           value={store.withdrawCnt}
-  //           onInput={(e) => setStore("withdrawCnt", parseInt(e.currentTarget.value) || 0)}
-  //         />
-  //         <span class="text-xs" classList={{
-  //           "text-green-600": store.withdrawCnt <= 40,
-  //           "text-red-600": store.withdrawCnt > 40
-  //         }}>
-  //           {store.withdrawCnt <= 40
-  //             ? "<= 40"
-  //             : `${store.withdrawCnt - 40} x -50 = ${calcWithdrawScore()}`
-  //           }
-  //         </span>
-  //       </div>
-  //       <div class="flex flex-col gap-1">
-  //         <label class="text-sm text-gray-600">结算分</label>
-  //         <input
-  //           type="number"
-  //           class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
-  //           value={store.score}
-  //           onInput={(e) => setStore("score", parseInt(e.currentTarget.value) || 0)}
-  //         />
-  //         <span class="text-xs text-gray-600">{store.score} x 0.5 = {calcScore()}</span>
-  //       </div>
-  //     </div>
-  //   </div>
-  // </>
+  const SumPart: Component = () => <>
+    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow shrink-0">
+      <h6 class="text-xl font-semibold pb-2">结算</h6>
+      <div class="flex flex-col gap-2 flex-1">
+        {/* <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">藏品数量</label>
+          <input
+            type="number"
+            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+            value={store.collectionsCnt}
+            onInput={(e) => setStore("collectionsCnt", parseInt(e.currentTarget.value) || 0)}
+          />
+          <span class="text-xs" classList={{
+            "text-green-600": store.collectible == Collectible.DoodleInTheEraOfHope,
+            "text-red-600": store.collectible != Collectible.DoodleInTheEraOfHope
+          }}>
+            {store.collectible == Collectible.DoodleInTheEraOfHope
+              ? `${store.collectionsCnt} * ${collectibleScore()} = ${calcCollectionsScore()}`
+              : "无希望时代的涂鸦"
+            }
+          </span>
+        </div> */}
+        {/* <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">击杀隐藏数量</label>
+          <input
+            type="number"
+            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+            value={store.killedHiddenCnt}
+            onInput={(e) => setStore("killedHiddenCnt", parseInt(e.currentTarget.value) || 0)}
+          />
+          <span class="text-xs text-gray-600">{store.killedHiddenCnt} * 10 = {calcHiddenScore()}</span>
+        </div> */}
+        {withdrawUI()}
+        {/* <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">结算分</label>
+          <input
+            type="number"
+            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+            value={store.score}
+            onInput={(e) => setStore("score", parseInt(e.currentTarget.value) || 0)}
+          />
+          <span class="text-xs text-gray-600">{store.score} x 0.5 = {calcScore()}</span>
+        </div> */}
+      </div>
+    </div>
+  </>
 
   const calcTotalSum = () => {
-    return 0
+    return calcEmergencySum() + calcLimitedOperatorsSum() + withdrawScore();
   }
-
 
   const [copyJsonOpen, setCopyJsonOpen] = createSignal(false);
   const [loadJsonOpen, setLoadJsonOpen] = createSignal(false);
@@ -893,7 +866,7 @@ export function JingYunCup4() {
             <LimitedOperatorsPart />
           </div>
           <div class="flex flex-col min-w-[200px] gap-2">
-            {/* <SumPart /> */}
+            <SumPart />
             <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow">
               <span class="text-2xl">总计：{calcTotalSum().toFixed(1)}</span>
               <div class="flex gap-2">
