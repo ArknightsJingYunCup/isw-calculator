@@ -1,4 +1,4 @@
-import { Accessor, Component, createEffect, createSignal, For, Match, Show, Switch, Index } from "solid-js";
+import { Accessor, Component, createEffect, createSignal, For, Match, Show, Switch, Index, Setter, JSX } from "solid-js";
 import { Dialog } from "@ark-ui/solid/dialog";
 import { Checkbox } from "@ark-ui/solid/checkbox";
 import { Portal } from "solid-js/web";
@@ -6,7 +6,7 @@ import { Portal } from "solid-js/web";
 import { createStore } from "solid-js/store";
 import { enumKeys, readJson, saveJson } from "../lib/utils";
 import { createMediaQuery } from "@solid-primitives/media";
-import { createWithdrawInput } from "../components";
+import { createCollectibleInput, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, NumberInput } from "../components";
 
 // MARK: LimitedOperator
 enum LimitedOperator {
@@ -57,6 +57,28 @@ const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.迷迭香]: 1,
 };
 const limitedOperatorsKeys: (keyof typeof LimitedOperator)[] = enumKeys(LimitedOperator);
+
+enum Squad {
+  指挥分队 = "指挥分队",
+  特勤分队 = "特勤分队",
+  后勤分队 = "后勤分队",
+
+  突击战术分队 = "突击战术分队",
+  堡垒战术分队 = "堡垒战术分队",
+  远程战术分队 = "远程战术分队",
+  破坏战术分队 = "破坏战术分队",
+
+  高台突破分队 = "高台突破分队",
+  地面突破分队 = "地面突破分队",
+
+  高规格分队 = "高规格分队",
+  游客分队 = "游客分队",
+  司岁台分队 = "司岁台分队",
+  天师府分队 = "天师府分队",
+  岁影回音分队 = "岁影回音分队",
+  花团锦簇分队 = "花团锦簇分队",
+  棋行险着分队 = "棋行险着分队",
+}
 
 // MARK: EmergencyOperation
 enum Level {
@@ -139,28 +161,18 @@ type EmergencyOperationRecord = {
 
 // MARK: Store
 type Store = {
+  squad: Squad | null,
   limitedOperators: LimitedOperator[],
   emergencyRecords: EmergencyOperationRecord[],
   withdrawCnt: number,
+  collectionsCnt: number,
+  tmpOperatorsCnt: TmpOperatorsCnt,
+  score: number,
 }
 
-// type Store = {
-//   collectible: Collectible | null,
-//   squad: Squad | null,
-//   emergencyRecords: EmergencyOperationRecord[],
-//   hiddenRecords: HiddenOperationRecord[],
-//   bossRecords: BossOperationRecord[],
-//   collectionsCnt: number,
-//   killedHiddenCnt: number,
-//   refreshCnt: number,
-//   withdrawCnt: number,
-//   score: number,
-//   bannedOperatorRecords: BannedOperatorRecord[],
-//   kingsCollectibleRecords: KingsCollectibleRecord[],
-//   kingOfTerra: boolean,
-// }
-
 const testStoreValue: Store = {
+  // squad: Squad.游客分队,
+  squad: null,
   limitedOperators: [
     LimitedOperator.电弧
   ],
@@ -175,13 +187,78 @@ const testStoreValue: Store = {
     }
   ],
   withdrawCnt: 61,
+  collectionsCnt: 151,
+  tmpOperatorsCnt: {
+    sixStar: 2,
+    fiveStar: 1,
+    fourStar: 3,
+  },
+  score: 20,
 };
 
 const defaultStoreValue: Store = {
+  squad: null,
   limitedOperators: [],
   emergencyRecords: [],
   withdrawCnt: 0,
+  collectionsCnt: 0,
+  tmpOperatorsCnt: {
+    sixStar: 0,
+    fiveStar: 0,
+    fourStar: 0,
+  },
+  score: 0,
 };
+
+type TmpOperatorsCnt = {
+  sixStar: number,
+  fiveStar: number,
+  fourStar: number,
+}
+
+function createTmpOperatorInput(
+  tmpOperatorsCnt: Accessor<TmpOperatorsCnt>, setTmpOperatorsCnt: Setter<TmpOperatorsCnt>
+): {
+  score: Accessor<number>,
+  ui: () => JSX.Element,
+} {
+  const sixStarCnt = () => tmpOperatorsCnt().sixStar;
+  const fiveStarCnt = () => tmpOperatorsCnt().fiveStar;
+  const fourStarCnt = () => tmpOperatorsCnt().fourStar;
+  const setSixStarCnt = (v: number): void => { setTmpOperatorsCnt((cnt) => ({ ...cnt, sixStar: v })); };
+  const setFiveStarCnt = (v: number): void => { setTmpOperatorsCnt((cnt) => ({ ...cnt, fiveStar: v })); };
+  const setFourStarCnt = (v: number): void => { setTmpOperatorsCnt((cnt) => ({ ...cnt, fourStar: v })); };
+
+  const SIX_STAR_SCORE = 50;
+  const FIVE_STAR_SCORE = 20;
+  const FOUR_STAR_SCORE = 10;
+  const score = () => sixStarCnt() * SIX_STAR_SCORE + fiveStarCnt() * FIVE_STAR_SCORE + fourStarCnt() * FOUR_STAR_SCORE;
+  return {
+    score,
+    ui: () => <>
+      <div class="flex flex-col gap-2">
+        <span>临时招募</span>
+        <div class="flex gap-1 max-w-full">
+          <div class="flex flex-col gap-1 flex-1 min-w-0">
+            <label class="text-sm text-gray-600">六星数量</label>
+            <NumberInput value={sixStarCnt} setValue={setSixStarCnt} />
+          </div>
+          <div class="flex flex-col gap-1 flex-1 min-w-0">
+            <label class="text-sm text-gray-600">五星数量</label>
+            <NumberInput value={fiveStarCnt} setValue={setFiveStarCnt} />
+          </div>
+          <div class="flex flex-col gap-1 flex-1 min-w-0">
+            <label class="text-sm text-gray-600">四星数量</label>
+            <NumberInput value={fourStarCnt} setValue={setFourStarCnt} />
+          </div>
+        </div>
+        <span class="text-xs">
+          {`${sixStarCnt()} x ${SIX_STAR_SCORE} + ${fiveStarCnt()} x ${FIVE_STAR_SCORE} + ${fourStarCnt()} x ${FOUR_STAR_SCORE} = ${score()}`}
+        </span>
+      </div>
+    </>
+  }
+}
 
 export function JingYunCup4() {
   const sm = createMediaQuery("(max-width: 600px)");
@@ -297,63 +374,64 @@ export function JingYunCup4() {
   //     + calcBannedSum() + calcKingsCollectibleSum();
   // }
 
-  // 开局设置
-  // const OpeningPart: Component = () => <>
-  //   <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 z-20">
-  //     <h6 class="text-xl font-semibold">开局设置</h6>
-  //     <div class="flex gap-4 flex-wrap justify-stretch">
-  //       <div class="min-w-[150px] flex-grow">
-  //         <Select.Root
-  //           value={store.squad || ''}
-  //           onChange={(value) => setStore("squad", value as Squad)}
-  //           options={Object.values(Squad)}
-  //           placeholder="开局分队"
-  //           itemComponent={(props) => (
-  //             <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
-  //               <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
-  //             </Select.Item>
-  //           )}
-  //         >
-  //           <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
-  //             <Select.Value<string>>
-  //               {(state) => state.selectedOption() || "开局分队"}
-  //             </Select.Value>
-  //           </Select.Trigger>
-  //           <Select.Portal>
-  //             <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
-  //               <Select.Listbox />
-  //             </Select.Content>
-  //           </Select.Portal>
-  //         </Select.Root>
-  //       </div>
+  // MARK: UI: 开局设置
+  const OpeningPart: Component = () => <>
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 z-20">
+      <h6 class="text-xl font-semibold">开局设置</h6>
+      <div class="flex gap-4 flex-wrap justify-stretch">
+        {EnumSelectInput(Squad, () => store.squad, (v) => setStore("squad", v))}
+        {/* <div class="min-w-[150px] flex-grow">
+          <Select.Root
+            value={store.squad || ''}
+            onChange={(value) => setStore("squad", value as Squad)}
+            options={Object.values(Squad)}
+            placeholder="开局分队"
+            itemComponent={(props) => (
+              <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
+              </Select.Item>
+            )}
+          >
+            <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
+              <Select.Value<string>>
+                {(state) => state.selectedOption() || "开局分队"}
+              </Select.Value>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                <Select.Listbox />
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+        </div> */}
 
-  //       <div class="min-w-[150px] flex-grow">
-  //         <Select.Root
-  //           value={store.collectible || ''}
-  //           onChange={(value) => setStore("collectible", value as Collectible)}
-  //           options={Object.values(Collectible)}
-  //           placeholder="开局藏品"
-  //           itemComponent={(props) => (
-  //             <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
-  //               <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
-  //             </Select.Item>
-  //           )}
-  //         >
-  //           <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
-  //             <Select.Value<string>>
-  //               {(state) => state.selectedOption() || "开局藏品"}
-  //             </Select.Value>
-  //           </Select.Trigger>
-  //           <Select.Portal>
-  //             <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
-  //               <Select.Listbox />
-  //             </Select.Content>
-  //           </Select.Portal>
-  //         </Select.Root>
-  //       </div>
-  //     </div>
-  //   </div>
-  // </>
+        {/* <div class="min-w-[150px] flex-grow">
+          <Select.Root
+            value={store.collectible || ''}
+            onChange={(value) => setStore("collectible", value as Collectible)}
+            options={Object.values(Collectible)}
+            placeholder="开局藏品"
+            itemComponent={(props) => (
+              <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
+              </Select.Item>
+            )}
+          >
+            <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
+              <Select.Value<string>>
+                {(state) => state.selectedOption() || "开局藏品"}
+              </Select.Value>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                <Select.Listbox />
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+        </div> */}
+      </div>
+    </div>
+  </>
 
   // MARK: UI: 紧急作战
   const [emergencyOpen, setEmergencyOpen] = createSignal(false);
@@ -660,30 +738,7 @@ export function JingYunCup4() {
         <span>该部分得分: {calcLimitedOperatorsSum()}</span>
       </div>
       <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣200分。</span>
-      <div class="flex flex-wrap gap-2">
-        <For each={enumKeys(LimitedOperator)}>{(operatorKey, idx) => {
-          const operator = LimitedOperator[operatorKey];
-
-          return <>
-            <button
-              class="px-3 py-1 rounded border transition-colors"
-              classList={{
-                "border-green-500 text-green-600 hover:bg-green-50": store.limitedOperators.includes(operator),
-                "border-gray-400 text-gray-600 hover:bg-gray-50": !store.limitedOperators.includes(operator)
-              }}
-              onClick={() => {
-                if (isLimitedOperatorSelected()[idx()]) {
-                  setStore("limitedOperators", (operators) => operators.filter((_operator) => _operator !== operator));
-                } else {
-                  setStore("limitedOperators", (operators) => [...operators, operator]);
-                }
-              }}
-            >
-              {operator}（{limitedOperatorCostMap[operator]}）
-            </button>
-          </>
-        }}</For>
-      </div>
+      {EnumMultiSelectInput(LimitedOperator, () => store.limitedOperators, (v) => setStore("limitedOperators", v), (v) => v)}
     </div>
   </>
 
@@ -691,30 +746,32 @@ export function JingYunCup4() {
     () => store.withdrawCnt, (v) => setStore("withdrawCnt", v),
     40, -50
   );
+  const { score: collectionsScore, ui: collectionsUI } = createCollectibleInput(
+    () => store.collectionsCnt, (v) => setStore("collectionsCnt", v),
+    5, 750
+  );
+  const { score: tmpOperatorScore, ui: tmpOperatorUI } = createTmpOperatorInput(
+    () => store.tmpOperatorsCnt, (v) => setStore("tmpOperatorsCnt", v)
+  );
+  const factor = () => {
+    return 1.0 +
+      (store.squad == Squad.游客分队 ? -0.1 : 0) +
+      (store.limitedOperators.includes(LimitedOperator.电弧) ? -0.05 : 0);
+  }
+  const factoredScore = () => {
+    return store.score * factor();
+  }
 
   // MARK: UI: 结算 & 其他
   const SumPart: Component = () => <>
-    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow shrink-0">
+    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow shrink-0 max-w-60">
       <h6 class="text-xl font-semibold pb-2">结算</h6>
       <div class="flex flex-col gap-2 flex-1">
-        {/* <div class="flex flex-col gap-1">
-          <label class="text-sm text-gray-600">藏品数量</label>
-          <input
-            type="number"
-            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
-            value={store.collectionsCnt}
-            onInput={(e) => setStore("collectionsCnt", parseInt(e.currentTarget.value) || 0)}
-          />
-          <span class="text-xs" classList={{
-            "text-green-600": store.collectible == Collectible.DoodleInTheEraOfHope,
-            "text-red-600": store.collectible != Collectible.DoodleInTheEraOfHope
-          }}>
-            {store.collectible == Collectible.DoodleInTheEraOfHope
-              ? `${store.collectionsCnt} * ${collectibleScore()} = ${calcCollectionsScore()}`
-              : "无希望时代的涂鸦"
-            }
-          </span>
-        </div> */}
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-600">倍率：{ factor() }</label>
+        </div>
+        {/* 收藏品 */}
+        {collectionsUI()}
         {/* <div class="flex flex-col gap-1">
           <label class="text-sm text-gray-600">击杀隐藏数量</label>
           <input
@@ -725,23 +782,21 @@ export function JingYunCup4() {
           />
           <span class="text-xs text-gray-600">{store.killedHiddenCnt} * 10 = {calcHiddenScore()}</span>
         </div> */}
+        {/* 取钱 */}
         {withdrawUI()}
-        {/* <div class="flex flex-col gap-1">
+        {/* 临时招募 */}
+        {tmpOperatorUI()}
+        <div class="flex flex-col gap-1">
           <label class="text-sm text-gray-600">结算分</label>
-          <input
-            type="number"
-            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
-            value={store.score}
-            onInput={(e) => setStore("score", parseInt(e.currentTarget.value) || 0)}
-          />
-          <span class="text-xs text-gray-600">{store.score} x 0.5 = {calcScore()}</span>
-        </div> */}
+          <NumberInput value={() => store.score} setValue={(v) => setStore("score", v)} />
+          <span class="text-xs text-gray-600">{store.score} x {factor()} = {factoredScore()}</span>
+        </div>
       </div>
     </div>
   </>
 
   const calcTotalSum = () => {
-    return calcEmergencySum() + calcLimitedOperatorsSum() + withdrawScore();
+    return calcEmergencySum() + calcLimitedOperatorsSum() + collectionsScore() + withdrawScore() + tmpOperatorScore();
   }
 
   const [copyJsonOpen, setCopyJsonOpen] = createSignal(false);
@@ -760,7 +815,7 @@ export function JingYunCup4() {
       {/* 窄屏界面 */}
       <Match when={sm()}>
         <div class="flex h-full box-border flex-col">
-          {/* <OpeningPart /> */}
+          <OpeningPart />
           <div class="flex flex-col flex-grow gap-2 overflow-y-auto p-2">
             {/* <Switch>
               <Match when={tab() == Tab.Operation}>
@@ -859,7 +914,7 @@ export function JingYunCup4() {
               单个“诡异行商”“易与”节点最多刷新4次。
               “昔字如烟”，“往昔难忆”关卡中，不允许在“岁躯”落下前在所在其地块部署任何单位。
             </span>
-            {/* <OpeningPart /> */}
+            <OpeningPart />
             <EmergencyPart />
             {/* <HiddenPart /> */}
             {/* <BossPart /> */}
