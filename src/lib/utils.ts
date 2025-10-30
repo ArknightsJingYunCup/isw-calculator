@@ -44,12 +44,13 @@ export async function readJson(): Promise<string> {
   })
 }
 
-type EnumLike = Record<string, string | number>;
+export type EnumLike = Record<string, string | number>;
+export type StringEnum = Record<string, string>;
 export function enumKeys<E extends EnumLike>(e: E): (keyof E)[] {
   return Object.keys(e)
     .filter(key => isNaN(Number(key)))
     .map(key => key as keyof E); // 只保留名字（跳过反向映射的数字key）
 }
-export function enumValues<E extends EnumLike>(e: E): (string | number)[] {
-  return Object.values(e);
+export function enumValues<E extends EnumLike>(e: E): E[keyof E][] {
+  return Object.values(e) as E[keyof E][];
 }
