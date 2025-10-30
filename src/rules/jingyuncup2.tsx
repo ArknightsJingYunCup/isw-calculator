@@ -11,6 +11,7 @@ import { AddBossRecordModal, BossOperationRecord } from "../components/AddBossRe
 import { readJson, saveJson } from "../lib/utils";
 import { AddHiddenRecordModal, HiddenOperationRecord } from "../components/AddHiddenRecordModal";
 import { createMediaQuery } from "@solid-primitives/media";
+import { createWithdrawInput } from "../components";
 
 type BannedOperatorRecord = {
   operator: BannedOperator,
@@ -220,10 +221,6 @@ export function JingYunCup2() {
     return store.refreshCnt > maxRefreshCnt() ? (store.refreshCnt - maxRefreshCnt()) * -50 : 0;
   }
 
-  const calcWithdrawScore = () => {
-    return store.withdrawCnt > 40 ? (store.withdrawCnt - 40) * -50 : 0;
-  }
-
   const calcScore = () => {
     return store.score * 0.5
   }
@@ -231,7 +228,7 @@ export function JingYunCup2() {
   const calcTotalSum = () => {
     return calcScore()
       + calcEmergencySum() + calcHiddenSum() + calcBossSum()
-      + calcCollectionsScore() + calcHiddenScore() + calcRefreshScore() + calcWithdrawScore()
+      + calcCollectionsScore() + calcHiddenScore() + calcRefreshScore() + withdrawScore()
       + calcBannedSum() + calcKingsCollectibleSum();
   }
 
@@ -618,6 +615,10 @@ export function JingYunCup2() {
     </div>
   </>
 
+  const { score: withdrawScore, ui: withdrawUI } = createWithdrawInput(
+    () => store.withdrawCnt, (v) => setStore("withdrawCnt", v),
+    40, -50
+  );
   // 结算 & 其他
   const SumPart: Component = () => <>
     <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow shrink-0">
@@ -669,7 +670,8 @@ export function JingYunCup2() {
             }
           </span>
         </div>
-        <div class="flex flex-col gap-1">
+        {withdrawUI()}
+        {/* <div class="flex flex-col gap-1">
           <label class="text-sm text-gray-600">取钱数量</label>
           <input
             type="number"
@@ -686,7 +688,7 @@ export function JingYunCup2() {
               : `${store.withdrawCnt - 40} x -50 = ${calcWithdrawScore()}`
             }
           </span>
-        </div>
+        </div> */}
         <div class="flex flex-col gap-1">
           <label class="text-sm text-gray-600">结算分</label>
           <input
