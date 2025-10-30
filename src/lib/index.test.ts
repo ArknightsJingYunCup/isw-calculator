@@ -44,3 +44,14 @@ test('enum', () => {
     console.log(enumKeys(E2));
     console.log(enumKeys(E3));
 })
+
+test('object keys', () => {
+    const obj = {
+        [0]: {
+            [0]: 1,
+            [2]: 1,
+        },
+    }
+    console.log(Object.keys(obj));
+    console.log(Object.keys(obj[0]));
+})
