@@ -3,10 +3,16 @@ import { Dialog } from "@ark-ui/solid/dialog";
 import { Checkbox } from "@ark-ui/solid/checkbox";
 import { Portal } from "solid-js/web";
 
-import { createStore } from "solid-js/store";
-import { enumKeys, readJson, saveJson } from "../lib/utils";
+import { createStore, produce } from "solid-js/store";
+import { enumKeys, enumValues, readJson, saveJson, StringEnum } from "../lib/utils";
 import { createMediaQuery } from "@solid-primitives/media";
 import { createCollectibleInput, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, NumberInput } from "../components";
+import { ToggleGroup } from "@ark-ui/solid/toggle-group";
+import { Toggle } from "@ark-ui/solid/toggle";
+
+function levelNum(level: Level): number {
+  return enumValues(Level).indexOf(level) + 1;
+}
 
 // MARK: LimitedOperator
 enum LimitedOperator {
@@ -56,7 +62,6 @@ const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.妮芙]: 1,
   [LimitedOperator.迷迭香]: 1,
 };
-const limitedOperatorsKeys: (keyof typeof LimitedOperator)[] = enumKeys(LimitedOperator);
 
 enum Squad {
   指挥分队 = "指挥分队",
@@ -135,6 +140,41 @@ const levelEmergencyOperationMap: { [key in Level]: EmergencyOperation[] } = {
   ]
 }
 
+enum BossLevel {
+  Third = Level.Third,
+  Fifth = Level.Fifth,
+  Sixth = Level.Sixth,
+}
+enum BonusBossOperation {
+  // 3
+  夕娥忆 = "夕娥忆",
+  仁义武 = "仁·义·武",
+  求道 = "求道",
+  // 5
+  破岁阵祀 = "破岁阵祀",
+  昔字如烟 = "昔字如烟",
+  天数将易 = "天数将易",
+  往昔难忆 = "往昔难忆",
+  // 6
+  末狩 = "末狩",
+}
+const levelBossOperationMap: { [key in BossLevel]: BonusBossOperation[] } = {
+  [Level.Third]: [
+    BonusBossOperation.夕娥忆,
+    BonusBossOperation.仁义武,
+    BonusBossOperation.求道,
+  ],
+  [Level.Fifth]: [
+    BonusBossOperation.破岁阵祀,
+    BonusBossOperation.天数将易,
+    BonusBossOperation.昔字如烟,
+    BonusBossOperation.往昔难忆,
+  ],
+  [Level.Sixth]: [
+    BonusBossOperation.末狩,
+  ]
+}
+
 // 每通过一个紧急作战，加20分（以结算页面为准）。
 const emergencyOperationBaseScore = 20;
 // 无漏通过以下紧急关时，获得对应分数
@@ -160,14 +200,43 @@ type EmergencyOperationRecord = {
 }
 
 // MARK: Store
+type TmpOperatorsCnt = {
+  sixStar: number,
+  fiveStar: number,
+  fourStar: number,
+}
+
+type HiddensCnt = {
+  normal: number,
+  withBonus: number,
+}
+
+type BossOperationRecordMap = {
+  [operation in BonusBossOperation]?: OperationModifier[]
+}
+type BossRecords = {
+  [level in BossLevel]: {
+    operation: BonusBossOperation,
+    modifiers: OperationModifier[],
+  } | null
+}
+
 type Store = {
   squad: Squad | null,
   limitedOperators: LimitedOperator[],
   emergencyRecords: EmergencyOperationRecord[],
+  bossRecords: BossRecords,
   withdrawCnt: number,
-  collectionsCnt: number,
+  collectiblesCnt: number,
   tmpOperatorsCnt: TmpOperatorsCnt,
+  hiddensCnt: HiddensCnt,
   score: number,
+}
+
+enum OperationModifier {
+  default = "",
+  perfect = "无漏",
+  忘生玲珑 = "忘生玲珑",
 }
 
 const testStoreValue: Store = {
@@ -186,12 +255,27 @@ const testStoreValue: Store = {
       perfect: false,
     }
   ],
+  bossRecords: {
+    [BossLevel.Third]: {
+      operation: BonusBossOperation.夕娥忆,
+      modifiers: [OperationModifier.perfect],
+    },
+    [BossLevel.Fifth]: {
+      operation: BonusBossOperation.往昔难忆,
+      modifiers: [OperationModifier.default, OperationModifier.perfect, OperationModifier.忘生玲珑],
+    },
+    [BossLevel.Sixth]: null,
+  },
   withdrawCnt: 61,
-  collectionsCnt: 151,
+  collectiblesCnt: 151,
   tmpOperatorsCnt: {
     sixStar: 2,
     fiveStar: 1,
     fourStar: 3,
+  },
+  hiddensCnt: {
+    normal: 0,
+    withBonus: 0,
   },
   score: 20,
 };
@@ -200,22 +284,228 @@ const defaultStoreValue: Store = {
   squad: null,
   limitedOperators: [],
   emergencyRecords: [],
+  bossRecords: {
+    [Level.Third]: null,
+    [Level.Fifth]: null,
+    [Level.Sixth]: null,
+  },
   withdrawCnt: 0,
-  collectionsCnt: 0,
+  collectiblesCnt: 0,
   tmpOperatorsCnt: {
     sixStar: 0,
     fiveStar: 0,
     fourStar: 0,
   },
+  hiddensCnt: {
+    normal: 0,
+    withBonus: 0,
+  },
   score: 0,
 };
 
-type TmpOperatorsCnt = {
-  sixStar: number,
-  fiveStar: number,
-  fourStar: number,
+type ModifierMap = {
+  [modifier in OperationModifier]?: (v: number) => number
+}
+type OperationModifierMap = {
+  [operation in BonusBossOperation]: ModifierMap
+}
+const operationModiferMap: OperationModifierMap = {
+  // 3
+  [BonusBossOperation.夕娥忆]: {
+    [OperationModifier.perfect]: (v: number) => v + 30,
+  },
+  [BonusBossOperation.仁义武]: {
+    [OperationModifier.perfect]: (v: number) => v + 50,
+  },
+  [BonusBossOperation.求道]: {
+    [OperationModifier.perfect]: (v: number) => v + 50,
+  },
+  // 5
+  [BonusBossOperation.破岁阵祀]: {
+    [OperationModifier.default]: (v: number) => v + 50,
+  },
+  [BonusBossOperation.天数将易]: {
+    [OperationModifier.default]: (v: number) => v + 150,
+  },
+  [BonusBossOperation.昔字如烟]: {
+    [OperationModifier.default]: (v: number) => v + 200,
+    [OperationModifier.perfect]: (v: number) => v + 50,
+  },
+  [BonusBossOperation.往昔难忆]: {
+    [OperationModifier.default]: (v: number) => v + 300,
+    [OperationModifier.perfect]: (v: number) => v + 50,
+    [OperationModifier.忘生玲珑]: (v: number) => v + 250,
+  },
+  // 6
+  [BonusBossOperation.末狩]: {
+    [OperationModifier.default]: (v: number) => v + 300,
+    [OperationModifier.perfect]: (v: number) => v + 50,
+  },
 }
 
+// T: Operation, M: Modifier
+type ModifierRecord<T extends StringEnum, M extends StringEnum> = {
+  operation: T,
+  modifiers: M[],
+}
+type ModifierEffectMap<M extends StringEnum> = {
+  [key in M[keyof M]]: (v: number) => number
+}
+type OperationModifierEffectMap<T extends StringEnum, M extends StringEnum> = {
+  [key in T[keyof T]]: ModifierEffectMap<M>
+}
+
+const ModifierSelector = <T extends StringEnum, M extends StringEnum>(
+  entry: T[keyof T],
+  operationModifierMap: OperationModifierEffectMap<T, M>,
+  modifiers: Accessor<M[keyof M][]>,
+  onUpdateModifiers: (modifiers: M[keyof M][]) => void,
+) => {
+  const modifierMap: ModifierMap = operationModifierMap[entry];
+  const allModifiers = Object.keys(modifierMap).map((key) => key as M[keyof M]);
+
+  const mainLabel =
+    `${entry}${allModifiers[0].length > 0 ? `（${allModifiers[0]}）` : ""}`;
+
+  return <>
+    <div class="flex border border-gray-300 rounded overflow-hidden">
+      <ToggleGroup.Root
+        multiple
+        value={modifiers()}
+        onValueChange={(e) => {
+          if (!e.value.includes(allModifiers[0])) {
+            onUpdateModifiers([]);
+          } else {
+            onUpdateModifiers(e.value as M[keyof M][]);
+          }
+        }}
+        class="flex"
+      >
+        <For each={allModifiers}>{(modifier, idx) => {
+          const isSelected = () => modifiers().includes(modifier);
+          const isLast = () => idx() === allModifiers.length - 1;
+          const disabled = () => modifiers().length === 0 && idx() !== 0;
+          return <ToggleGroup.Item
+            value={modifier}
+            class="px-3 py-1 transition-colors cursor-pointer"
+            classList={{
+              "text-white": isSelected(),
+              "text-sm": idx() !== 0,
+              "bg-blue-500 ": isSelected() && idx() === 0,
+              "bg-green-500": isSelected() && idx() !== 0,
+              "text-gray-700 hover:bg-gray-50": !isSelected(),
+              "opacity-50 cursor-not-allowed": disabled(),
+              "border-r border-gray-300": !isLast(),
+            }}
+            disabled={disabled()}
+          >
+            {idx() === 0 ? mainLabel : modifier}
+          </ToggleGroup.Item>
+        }}</For>
+      </ToggleGroup.Root>
+    </div>
+  </>;
+}
+
+// MARK: createBossOperationInput
+function createBossOperationInput(
+  bossRecords: Accessor<BossRecords>, setBossRecords: Setter<BossRecords>
+): {
+  score: Accessor<number>,
+  ui: () => JSX.Element,
+} {
+  const levelScore = () => {
+    console.log(bossRecords())
+    return enumValues(BossLevel).map((x) =>
+      bossRecords()[x] == null ? 0 : bossRecords()[x]!.modifiers.reduce(
+        (sum, modifier) => operationModiferMap[bossRecords()[x]!.operation]![modifier]!(sum), 0)
+    );
+  }
+  const score = () => levelScore().reduce((sum, x) => sum + x, 0);
+  return {
+    score,
+    ui: () => <>
+      <div class="flex flex-col gap-2 bg-white shadow p-4 rounded-lg">
+        <div class="flex items-center gap-4">
+          <h6 class="text-xl font-semibold">领袖作战</h6>
+          <div class="flex-grow" />
+          <span>该部分得分: {score().toFixed(1)}</span>
+        </div>
+        <For each={enumValues(BossLevel)}>{(level, idx) => {
+          const operations = levelBossOperationMap[level];
+          return <>
+            <div class="flex gap-2 items-baseline">
+              <span class="font-medium">第 {levelNum(level as unknown as Level)} 层：{level}</span>
+              <span class="text-xs">{levelScore()[idx()]}</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <For each={operations}>{(operation) => {
+                const record = () => bossRecords()[level];
+
+                return ModifierSelector(
+                  operation,
+                  operationModiferMap,
+                  () => !record()?.operation || record()?.operation !== operation ? [] : record()?.modifiers || [],
+                  (modifiers) => {
+                    if (modifiers.length === 0) {
+                      setBossRecords(produce((records) => {
+                        records[level] = null;
+                      }));
+                    } else {
+                      setBossRecords(produce((records) => {
+                        records[level] = {
+                          operation: operation,
+                          modifiers: modifiers as OperationModifier[],
+                        };
+                      }));
+                    }
+                  }
+                )
+              }}</For>
+            </div>
+          </>
+        }}</For>
+      </div>
+    </>
+  }
+}
+
+// MARK: createHiddensInput
+function createHiddensInput(
+  hiddensCnt: Accessor<HiddensCnt>, setHiddensCnt: Setter<HiddensCnt>
+): {
+  score: Accessor<number>,
+  ui: () => JSX.Element,
+} {
+  const normalCnt = () => hiddensCnt().normal;
+  const withBonusCnt = () => hiddensCnt().withBonus;
+  const setNormalCnt = (v: number): void => { setHiddensCnt((cnt) => ({ ...cnt, normal: v })); };
+  const setWithBonusCnt = (v: number): void => { setHiddensCnt((cnt) => ({ ...cnt, withBonus: v })); };
+  const score = () => normalCnt() * 10 + withBonusCnt() * 30;
+  return {
+    score,
+    ui: () => <>
+      <div class="flex flex-col gap-2">
+        <span>临时招募</span>
+        <div class="flex gap-1 max-w-full">
+          <div class="flex flex-col gap-1 flex-1 min-w-0">
+            <label class="text-sm text-gray-600">无鸭爵金砖（+10）</label>
+            <NumberInput value={normalCnt} setValue={setNormalCnt} />
+          </div>
+          <div class="flex flex-col gap-1 flex-1 min-w-0">
+            <label class="text-sm text-gray-600">有鸭爵金砖（+30）</label>
+            <NumberInput value={withBonusCnt} setValue={setWithBonusCnt} />
+          </div>
+        </div>
+        <span class="text-xs">
+          {`${normalCnt()} x 10 + ${withBonusCnt()} x 30 = ${score()}`}
+        </span>
+      </div>
+    </>
+  }
+}
+
+// MARK: createTmpOperatorInput
 function createTmpOperatorInput(
   tmpOperatorsCnt: Accessor<TmpOperatorsCnt>, setTmpOperatorsCnt: Setter<TmpOperatorsCnt>
 ): {
@@ -533,9 +823,6 @@ export function JingYunCup4() {
             <tbody>
               <For each={store.emergencyRecords}>
                 {(record, idx) => {
-                  createEffect(() => {
-                    console.log(store.emergencyRecords)
-                  })
                   const bonus = calcEmergencyRecordBonusList()[idx()];
                   return <>
                     <tr class="border-b last:border-0">
@@ -657,75 +944,15 @@ export function JingYunCup4() {
   //     </div>
   //   </div>
   // </>
+  // MARK: UI: 领袖作战
+  const { score: bossScore, ui: bossUI } = createBossOperationInput(() => store.bossRecords, (bossRecords) => setStore('bossRecords', bossRecords));
 
-  // // 领袖作战
-  // const [bossOpen, setBossOpen] = createSignal(false);
-  // const addBossRecord = (record: BossOperationRecord) => {
-  //   setStore('bossRecords', (operations) => [...operations, record])
-  // }
-  // const removeBossRecord = (idx: number) => {
-  //   setStore('bossRecords', (operations) => operations.filter((_, i) =>
-  //     i !== idx
-  //   ))
-  // }
-  // const BossPart = () => <>
-  //   <AddBossRecordModal open={bossOpen} onClose={() => { setBossOpen(false); }} onAddRecord={addBossRecord} />
-  //   <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
-  //     <div class="flex items-center gap-4">
-  //       <h6 class="text-xl font-semibold">领袖作战</h6>
-  //       <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => { setBossOpen(true) }}>
-  //         添加
-  //       </button>
-  //       <div class="flex-grow" />
-  //       <span>该部分得分: {calcBossSum().toFixed(1)}</span>
-  //     </div>
-
-  //     <div class="flex-1 overflow-x-auto">
-  //       <table class="w-full text-sm">
-  //         <thead>
-  //           <tr class="border-b">
-  //             <th class="text-left p-2">名称</th>
-  //             <th class="p-2">&nbsp;&nbsp;&nbsp;&nbsp;</th>
-  //             <th class="p-2">&nbsp;&nbsp;&nbsp;&nbsp;</th>
-  //             <th class="text-right p-2">分数</th>
-  //             <th class="text-center p-2">操作</th>
-  //           </tr>
-  //         </thead>
-  //         <tbody>
-  //           <For each={store.bossRecords}>
-  //             {(item, idx) => (
-  //               <tr class="border-b last:border-0">
-  //                 <td class="p-2" classList={{ "text-red-500": item.chaos }}>
-  //                   {item.operation}
-  //                   <Show when={item.chaos}>
-  //                     （混乱）
-  //                   </Show>
-  //                 </td>
-  //                 <td class="p-2"></td>
-  //                 <td class="p-2"></td>
-  //                 <td class="text-right p-2">{calcBossRecordScore(idx()).toFixed(1)}</td>
-  //                 <td class="text-center p-2">
-  //                   <button class="text-red-500 hover:text-red-700 p-1" onClick={() => removeBossRecord(idx())}>
-  //                     <span class="i-mdi-delete text-xl"></span>
-  //                   </button>
-  //                 </td>
-  //               </tr>
-  //             )}
-  //           </For>
-  //         </tbody>
-  //       </table>
-  //     </div>
-  //   </div>
-  // </>
 
   const calcLimitedOperatorCosts = () => {
     return store.limitedOperators.reduce((sum, operator) => sum + limitedOperatorCostMap[operator], 0);
   }
   const calcLimitedOperatorsSum = () => {
     return Math.max(0, (calcLimitedOperatorCosts() - 10)) * -200;
-  }
-  const isLimitedOperatorSelected = () => {
-    return limitedOperatorsKeys.map(key => store.limitedOperators.includes(key as LimitedOperator));
   }
 
   // MARK: UI: 阵容规则
@@ -742,17 +969,25 @@ export function JingYunCup4() {
     </div>
   </>
 
+  // 1. 完成比赛时，每持有一个收藏品，额外加 5 分，上限750分。
+  const { score: collectiblesScore, ui: collectiblesUI } = createCollectibleInput(
+    () => store.collectiblesCnt, (v) => setStore("collectiblesCnt", v),
+    5, 750
+  );
+  // 2. 比赛期间消耗前瞻性投资余额小于 60 的不扣分，若消耗量超过 60 源石锭，每超出 1 点源石锭扣除 50 分
   const { score: withdrawScore, ui: withdrawUI } = createWithdrawInput(
     () => store.withdrawCnt, (v) => setStore("withdrawCnt", v),
     40, -50
   );
-  const { score: collectionsScore, ui: collectionsUI } = createCollectibleInput(
-    () => store.collectionsCnt, (v) => setStore("collectionsCnt", v),
-    5, 750
-  );
+  // 3. 比赛过程中，选取临时招募干员可获得加分。每个六星干员+50 分，每个五星干员+20分，每个四星干员+10 分。
   const { score: tmpOperatorScore, ui: tmpOperatorUI } = createTmpOperatorInput(
     () => store.tmpOperatorsCnt, (v) => setStore("tmpOperatorsCnt", v)
   );
+  // 4. 每击杀一个鸭/狗/熊/鼠，+20分。若持有鸭爵金币额外+10分。
+  const { score: hiddensScore, ui: hiddensUI } = createHiddensInput(
+    () => store.hiddensCnt, (v) => setStore("hiddensCnt", v)
+  );
+  // 5. 比赛时，每名选手的基础结算分倍率为1。使用游客分队比赛时，该倍率-0.1。抓取干员电弧时，该倍率-0.05。
   const factor = () => {
     return 1.0 +
       (store.squad == Squad.游客分队 ? -0.1 : 0) +
@@ -768,24 +1003,16 @@ export function JingYunCup4() {
       <h6 class="text-xl font-semibold pb-2">结算</h6>
       <div class="flex flex-col gap-2 flex-1">
         <div class="flex flex-col gap-1">
-          <label class="text-sm text-gray-600">倍率：{ factor() }</label>
+          <label class="text-sm text-gray-600">倍率：{factor()}</label>
         </div>
         {/* 收藏品 */}
-        {collectionsUI()}
-        {/* <div class="flex flex-col gap-1">
-          <label class="text-sm text-gray-600">击杀隐藏数量</label>
-          <input
-            type="number"
-            class="border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
-            value={store.killedHiddenCnt}
-            onInput={(e) => setStore("killedHiddenCnt", parseInt(e.currentTarget.value) || 0)}
-          />
-          <span class="text-xs text-gray-600">{store.killedHiddenCnt} * 10 = {calcHiddenScore()}</span>
-        </div> */}
+        {collectiblesUI()}
         {/* 取钱 */}
         {withdrawUI()}
         {/* 临时招募 */}
         {tmpOperatorUI()}
+        {/* 隐藏击杀 */}
+        {hiddensUI()}
         <div class="flex flex-col gap-1">
           <label class="text-sm text-gray-600">结算分</label>
           <NumberInput value={() => store.score} setValue={(v) => setStore("score", v)} />
@@ -796,13 +1023,15 @@ export function JingYunCup4() {
   </>
 
   const calcTotalSum = () => {
-    return calcEmergencySum() + calcLimitedOperatorsSum() + collectionsScore() + withdrawScore() + tmpOperatorScore();
+    return calcEmergencySum() + bossScore() +
+      calcLimitedOperatorsSum() + collectiblesScore() + withdrawScore() + tmpOperatorScore();
   }
 
   const [copyJsonOpen, setCopyJsonOpen] = createSignal(false);
   const [loadJsonOpen, setLoadJsonOpen] = createSignal(false);
   const [json, setJson] = createSignal("");
 
+  // TODO: 窄屏适配
   enum Tab {
     Operation = "作战",
     OperatorsAndKingsCollectible = "阵容和国王套",
@@ -918,6 +1147,7 @@ export function JingYunCup4() {
             <EmergencyPart />
             {/* <HiddenPart /> */}
             {/* <BossPart /> */}
+            {bossUI()}
             <LimitedOperatorsPart />
           </div>
           <div class="flex flex-col min-w-[200px] gap-2">

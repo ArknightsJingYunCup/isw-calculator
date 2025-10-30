@@ -1,5 +1,6 @@
 /* @refresh reload */
 import 'virtual:uno.css'
+import "./index.css";
 import { render } from "solid-js/web";
 import { Route, Router } from '@solidjs/router';
 import { JingYunCup4 } from './rules/jingyuncup4';

@@ -39,37 +39,43 @@ export function EnumSelectInput<E extends StringEnum>(
   </>
 }
 
-export function EnumMultiSelectInput<E extends EnumLike>(
-  e: E,
-  selected: Accessor<E[keyof E][]>, setSelected: Setter<E[keyof E][]>,
-  entryElem: (value: E[keyof E]) => JSX.Element
+export function MultiSelectInput<T>(
+  items: T[],
+  selected: Accessor<T[]>, setSelected: Setter<T[]>,
+  entryElem: (item: T) => JSX.Element
 ) {
   return <>
     <div class="flex flex-wrap gap-2">
-      <For each={enumKeys(e)}>{(key) => {
-        const value = e[key];
-
+      <For each={items}>{(item) => {
         return <>
           <button
             class="px-3 py-1 rounded border transition-colors"
             classList={{
-              "border-green-500 text-green-600 hover:bg-green-50": selected().includes(value),
-              "border-gray-400 text-gray-600 hover:bg-gray-50": !selected().includes(value)
+              "border-green-500 text-green-600 hover:bg-green-50": selected().includes(item),
+              "border-gray-400 text-gray-600 hover:bg-gray-50": !selected().includes(item)
             }}
             onClick={() => {
-              if (selected().includes(value)) {
-                setSelected((selected) => selected.filter((_value) => _value !== value));
+              if (selected().includes(item)) {
+                setSelected((selected) => selected.filter((_value) => _value !== item));
               } else {
-                setSelected((selected) => [...selected, value]);
+                setSelected((selected) => [...selected, item]);
               }
             }}
           >
-            {entryElem(value)}
+            {entryElem(item)}
           </button>
         </>
       }}</For>
     </div>
   </>
+}
+
+export function EnumMultiSelectInput<E extends EnumLike>(
+  e: E,
+  selected: Accessor<E[keyof E][]>, setSelected: Setter<E[keyof E][]>,
+  entryElem: (value: E[keyof E]) => JSX.Element
+) {
+  return MultiSelectInput(enumValues(e), selected, setSelected, entryElem);
 }
 
 export const NumberInput: Component<{ value: Accessor<number>, setValue: (v: number) => void, upperLimit?: number }> = (props) => {
