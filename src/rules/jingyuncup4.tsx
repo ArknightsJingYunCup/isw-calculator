@@ -135,8 +135,8 @@ const levelEmergencyOperationMap: LevelOperationListMap<typeof Level, typeof Eme
     EmergencyOperation.炎灼,
     EmergencyOperation.人镇,
     EmergencyOperation.借力打力,
-    EmergencyOperation.普通·越山海，
     EmergencyOperation.越山海,
+    EmergencyOperation.普通·越山海，
   ]
 }
 
