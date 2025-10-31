@@ -3,7 +3,7 @@ import solidPlugin from 'vite-plugin-solid';
 import devtools from 'solid-devtools/vite';
 import UnoCSS from 'unocss/vite'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [devtools(), solidPlugin(), UnoCSS()],
   server: {
     port: 3000,
@@ -11,5 +11,5 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
-  base: './',
-});
+  base: mode === 'production' ? '/isw-calculator/' : '/',
+}));
