@@ -184,6 +184,7 @@ enum EmergencyOperationModifier {
 }
 
 // 使用 Modifier 系统定义紧急作战的加分规则
+// 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
 const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOperation, typeof EmergencyOperationModifier> = {
   [EmergencyOperation.峥嵘战功]: {
     [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
@@ -254,62 +255,86 @@ enum SpecialEvent {
 
 enum SpecialEventModifier {
   default = "",
+  emergency = "紧急",
   perfect = "无漏",
-  emergency_perfect = "紧急+无漏",
 }
 
+// 注意：Modifier 的定义顺序很重要！
+// Modifiers 通过 reduce 累积应用：default -> emergency -> perfect
+// 
+// 计算规则说明：
+// 1. default: 给基础分（最终分数的 50%）
+// 2. emergency: 如果是紧急版本，额外加分
+// 3. perfect: 无漏时将当前分数 * 2（翻倍到 100%）
+//
+// 示例：
+// - 源源不断 普通无漏 20分: (10) * 2 = 20
+// - 源源不断 普通非无漏 10分: 10 (50%)
+// - 源源不断 紧急无漏 30分: (10 + 5) * 2 = 30
+// - 源源不断 紧急非无漏 15分: 10 + 5 (50%)
+// - 为崖作伥 无漏 30分: (3 * 5) * 2 = 30 (假设坠崖数为5)
+// - 为崖作伥 非无漏 15分: 3 * 5 = 15 (50%)
+//
+// 特殊事件无漏定义：关卡内未损失目标生命值，击杀所有鸭/狗/熊/鼠/雕伥/宝箱
+// 非无漏时，特殊事件加分降为原有的50%
 const specialEventModifierMap: FullOperationModifierMap<typeof SpecialEvent, typeof SpecialEventModifier> = {
   [SpecialEvent.源源不断]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.perfect]: (v: number) => v + 20,
-    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 30,
+    [SpecialEventModifier.default]: (v: number) => v + 10,  // 基础 50%
+    [SpecialEventModifier.emergency]: (v: number) => v + 5,  // 紧急额外 +5
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,   // 无漏翻倍
   },
   [SpecialEvent.闪闪发光]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.perfect]: (v: number) => v + 20,
-    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 30,
+    [SpecialEventModifier.default]: (v: number) => v + 10,
+    [SpecialEventModifier.emergency]: (v: number) => v + 5,
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.循循善诱]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.perfect]: (v: number) => v + 20,
-    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 50,
+    [SpecialEventModifier.default]: (v: number) => v + 10,  // 普通 20
+    [SpecialEventModifier.emergency]: (v: number) => v + 15, // 紧急 50 (10+15)*2
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.易易鸭鸭]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.perfect]: (v: number) => v + 50,
-    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 100,
+    [SpecialEventModifier.default]: (v: number) => v + 25,  // 普通 50
+    [SpecialEventModifier.emergency]: (v: number) => v + 25, // 紧急 100 (25+25)*2
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.紧急劫罚]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 60,
+    [SpecialEventModifier.default]: (v: number) => v + 0,   // 无普通版本
+    [SpecialEventModifier.emergency]: (v: number) => v + 30, // 紧急 60 (0+30)*2
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.生百相]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.perfect]: (v: number) => v + 40,
+    [SpecialEventModifier.default]: (v: number) => v + 20,  // 普通 40
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.紧急硕果累累]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 60,
+    [SpecialEventModifier.default]: (v: number) => v + 0,
+    [SpecialEventModifier.emergency]: (v: number) => v + 30, // 紧急 60
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.以逸待劳]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.perfect]: (v: number) => v + 60,
+    [SpecialEventModifier.default]: (v: number) => v + 30,  // 普通 60 (不包括紧急)
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.喜从驼来]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.perfect]: (v: number) => v + 30,
+    [SpecialEventModifier.default]: (v: number) => v + 15,  // 普通 30
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.紧急硅基伥的宴席]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 50,
+    [SpecialEventModifier.default]: (v: number) => v + 0,
+    [SpecialEventModifier.emergency]: (v: number) => v + 25, // 紧急 50
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.紧急彻底失控]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 60,
+    [SpecialEventModifier.default]: (v: number) => v + 0,
+    [SpecialEventModifier.emergency]: (v: number) => v + 30, // 紧急 60
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
   [SpecialEvent.为崖作伥]: {
     [SpecialEventModifier.default]: (v: number) => v,
-    // 为崖作伥的分数由 extraData.count 计算: 3 * count
+    [SpecialEventModifier.perfect]: (v: number) => v * 2,   // 为崖作伥也受无漏影响
+    // 基础分数由 extraData.count 计算: 3 * count
+    // 无漏时: 3 * count * 2
   },
 }
 
@@ -347,6 +372,7 @@ enum OperationModifier {
   忘生玲珑 = "忘生玲珑",
 }
 
+// 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
 const testStoreValue: Store = {
   // squad: Squad.游客分队,
   squad: null,
@@ -359,25 +385,57 @@ const testStoreValue: Store = {
       modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
     },
     {
-      operation: EmergencyOperation.峥嵘战功,
+      operation: EmergencyOperation.赶场戏班,
       modifiers: [EmergencyOperationModifier.default],
+    },
+    {
+      operation: EmergencyOperation.青山不语,
+      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
+    },
+    {
+      operation: EmergencyOperation.越山海,
+      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
     }
   ],
   specialEventRecords: [
     {
+      operation: SpecialEvent.源源不断,
+      modifiers: [SpecialEventModifier.default, SpecialEventModifier.perfect], // 普通无漏: (10) * 2 = 20
+    },
+    {
+      operation: SpecialEvent.闪闪发光,
+      modifiers: [SpecialEventModifier.default, SpecialEventModifier.emergency], // 紧急非无漏: 10 + 5 = 15
+    },
+    {
+      operation: SpecialEvent.易易鸭鸭,
+      modifiers: [SpecialEventModifier.default, SpecialEventModifier.emergency, SpecialEventModifier.perfect], // 紧急无漏: (25 + 25) * 2 = 100
+    },
+    {
+      operation: SpecialEvent.紧急劫罚,
+      modifiers: [SpecialEventModifier.default, SpecialEventModifier.emergency, SpecialEventModifier.perfect], // 紧急无漏: (0 + 30) * 2 = 60
+    },
+    {
+      operation: SpecialEvent.生百相,
+      modifiers: [SpecialEventModifier.default], // 普通非无漏: 20
+    },
+    {
+      operation: SpecialEvent.以逸待劳,
+      modifiers: [SpecialEventModifier.default, SpecialEventModifier.perfect], // 普通无漏: 30 * 2 = 60
+    },
+    {
       operation: SpecialEvent.为崖作伥,
-      modifiers: [SpecialEventModifier.default],
-      extraData: { count: 5 },
+      modifiers: [SpecialEventModifier.default, SpecialEventModifier.perfect],
+      extraData: { count: 5 }, // 无漏: 3 * 5 * 2 = 30, 非无漏: 3 * 5 = 15
     }
   ],
   bossRecords: {
     [BossLevel.Third]: {
       operation: BonusBossOperation.夕娥忆,
-      modifiers: [OperationModifier.perfect],
+      modifiers: [OperationModifier.perfect], // 只有 perfect modifier
     },
     [BossLevel.Fifth]: {
       operation: BonusBossOperation.往昔难忆,
-      modifiers: [OperationModifier.default, OperationModifier.perfect, OperationModifier.忘生玲珑],
+      modifiers: [OperationModifier.default, OperationModifier.perfect, OperationModifier.忘生玲珑], // 全部 modifiers
     },
     [BossLevel.Sixth]: null,
   },
@@ -389,8 +447,8 @@ const testStoreValue: Store = {
     fourStar: 3,
   },
   hiddensCnt: {
-    normal: 0,
-    withBonus: 0,
+    normal: 2,
+    withBonus: 1,
   },
   score: 20,
 };
@@ -419,7 +477,8 @@ const defaultStoreValue: Store = {
   score: 0,
 };
 
-const operationModiferMap: OperationModifierMap<typeof BonusBossOperation, typeof OperationModifier> = {
+// 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
+const bossOperationModiferMap: OperationModifierMap<typeof BonusBossOperation, typeof OperationModifier> = {
   // 3
   [BonusBossOperation.夕娥忆]: {
     [OperationModifier.perfect]: (v: number) => v + 30,
@@ -463,7 +522,7 @@ function createBossOperationInput(
   const levelScore = () => {
     return enumValues(BossLevel).map((x) =>
       bossRecords()[x] == null ? 0 : bossRecords()[x]!.modifiers.reduce(
-        (sum, modifier) => operationModiferMap[bossRecords()[x]!.operation]![modifier]!(sum), 0)
+        (sum, modifier) => bossOperationModiferMap[bossRecords()[x]!.operation]![modifier]!(sum), 0)
     );
   }
   const score = () => levelScore().reduce((sum, x) => sum + x, 0);
@@ -489,7 +548,7 @@ function createBossOperationInput(
 
                 return ModifierSelector(
                   operation,
-                  operationModiferMap,
+                  bossOperationModiferMap,
                   () => !record()?.operation || record()?.operation !== operation ? [] : record()?.modifiers || [],
                   (modifiers) => {
                     if (modifiers.length === 0) {
@@ -686,10 +745,14 @@ export function JingYunCup4() {
     onUpdateRecord: updateSpecialEventRecord,
     onRemoveRecord: removeSpecialEventRecord,
     calculateScore: (record) => {
-      // 为崖作伥特殊计算
+      // 为崖作伥特殊计算：先计算基础分，再应用 modifiers（包括 perfect）
       if (record.operation === SpecialEvent.为崖作伥) {
         const count = record.extraData?.count || 0;
-        return count * 3;
+        const baseScore = count * 1.5;
+        // 应用 modifiers（如 perfect 翻倍）
+        return record.modifiers.reduce((sum, modifier) => {
+          return specialEventModifierMap[record.operation][modifier]!(sum);
+        }, baseScore);
       }
       // 其他事件使用默认计算
       return record.modifiers.reduce((sum, modifier) => {
