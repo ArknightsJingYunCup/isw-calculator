@@ -236,6 +236,85 @@ const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOp
 
 type EmergencyOperationRecord = ModifierRecord<typeof EmergencyOperation, typeof EmergencyOperationModifier>;
 
+// MARK: SpecialEvent
+enum SpecialEvent {
+  源源不断 = "源源不断",
+  闪闪发光 = "闪闪发光",
+  循循善诱 = "循循善诱",
+  易易鸭鸭 = "易易鸭鸭",
+  紧急劫罚 = "紧急劫罚",
+  生百相 = "生百相",
+  紧急硕果累累 = "紧急硕果累累",
+  以逸待劳 = "以逸待劳",
+  喜从驼来 = "喜从驼来",
+  紧急硅基伥的宴席 = "紧急硅基伥的宴席",
+  紧急彻底失控 = "紧急彻底失控",
+  为崖作伥 = "为崖作伥",
+}
+
+enum SpecialEventModifier {
+  default = "",
+  perfect = "无漏",
+  emergency_perfect = "紧急+无漏",
+}
+
+const specialEventModifierMap: FullOperationModifierMap<typeof SpecialEvent, typeof SpecialEventModifier> = {
+  [SpecialEvent.源源不断]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.perfect]: (v: number) => v + 20,
+    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 30,
+  },
+  [SpecialEvent.闪闪发光]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.perfect]: (v: number) => v + 20,
+    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 30,
+  },
+  [SpecialEvent.循循善诱]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.perfect]: (v: number) => v + 20,
+    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 50,
+  },
+  [SpecialEvent.易易鸭鸭]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.perfect]: (v: number) => v + 50,
+    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 100,
+  },
+  [SpecialEvent.紧急劫罚]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 60,
+  },
+  [SpecialEvent.生百相]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.perfect]: (v: number) => v + 40,
+  },
+  [SpecialEvent.紧急硕果累累]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 60,
+  },
+  [SpecialEvent.以逸待劳]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.perfect]: (v: number) => v + 60,
+  },
+  [SpecialEvent.喜从驼来]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.perfect]: (v: number) => v + 30,
+  },
+  [SpecialEvent.紧急硅基伥的宴席]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 50,
+  },
+  [SpecialEvent.紧急彻底失控]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.emergency_perfect]: (v: number) => v + 60,
+  },
+  [SpecialEvent.为崖作伥]: {
+    [SpecialEventModifier.default]: (v: number) => v,
+    // 为崖作伥的分数由 extraData.count 计算: 3 * count
+  },
+}
+
+type SpecialEventRecord = ModifierRecord<typeof SpecialEvent, typeof SpecialEventModifier>;
+
 // MARK: Store
 type TmpOperatorsCnt = {
   sixStar: number,
@@ -253,6 +332,7 @@ type Store = {
   squad: Squad | null,
   limitedOperators: LimitedOperator[],
   emergencyRecords: EmergencyOperationRecord[],
+  specialEventRecords: SpecialEventRecord[],
   bossRecords: BossRecords,
   withdrawCnt: number,
   collectiblesCnt: number,
@@ -281,6 +361,13 @@ const testStoreValue: Store = {
     {
       operation: EmergencyOperation.峥嵘战功,
       modifiers: [EmergencyOperationModifier.default],
+    }
+  ],
+  specialEventRecords: [
+    {
+      operation: SpecialEvent.为崖作伥,
+      modifiers: [SpecialEventModifier.default],
+      extraData: { count: 5 },
     }
   ],
   bossRecords: {
@@ -312,6 +399,7 @@ const defaultStoreValue: Store = {
   squad: null,
   limitedOperators: [],
   emergencyRecords: [],
+  specialEventRecords: [],
   bossRecords: {
     [Level.Third]: null,
     [Level.Fifth]: null,
@@ -580,6 +668,83 @@ export function JingYunCup4() {
     </div>
   </>
 
+  // MARK: UI: 特殊事件
+  const [specialEventOpen, setSpecialEventOpen] = createSignal(false);
+  const addSpecialEventRecord = (record: SpecialEventRecord) => {
+    setStore('specialEventRecords', (records) => [...records, record])
+  }
+  const updateSpecialEventRecord = (idx: number, record: SpecialEventRecord) => {
+    setStore('specialEventRecords', idx, record)
+  }
+  const removeSpecialEventRecord = (idx: number) => {
+    setStore('specialEventRecords', (records) => records.filter((_, i) => i !== idx))
+  }
+
+  const { score: specialEventScore, ui: specialEventUI } = createModifierRecordTable({
+    records: () => store.specialEventRecords,
+    operationModifierMap: specialEventModifierMap,
+    onUpdateRecord: updateSpecialEventRecord,
+    onRemoveRecord: removeSpecialEventRecord,
+    calculateScore: (record) => {
+      // 为崖作伥特殊计算
+      if (record.operation === SpecialEvent.为崖作伥) {
+        const count = record.extraData?.count || 0;
+        return count * 3;
+      }
+      // 其他事件使用默认计算
+      return record.modifiers.reduce((sum, modifier) => {
+        return specialEventModifierMap[record.operation][modifier]!(sum);
+      }, 0);
+    },
+    extraUI: (record, idx, onUpdate) => {
+      // 为崖作伥额外显示数量输入
+      if (record.operation === SpecialEvent.为崖作伥) {
+        return (
+          <div class="flex items-center gap-2 border border-gray-300 rounded px-2">
+            <span class="text-sm text-gray-600">坠崖数:</span>
+            <input
+              type="number"
+              class="w-16 px-2 py-1 text-sm border-none focus:outline-none"
+              value={record.extraData?.count || 0}
+              onInput={(e) => {
+                const count = parseInt(e.currentTarget.value) || 0;
+                onUpdate({
+                  ...record,
+                  extraData: { count }
+                });
+              }}
+            />
+          </div>
+        );
+      }
+      return null;
+    }
+  });
+
+  const SpecialEventPart = () => <>
+    <AddDefaultModifierRecordModal
+      open={specialEventOpen}
+      onClose={() => setSpecialEventOpen(false)}
+      onAddRecord={addSpecialEventRecord}
+      title="添加特殊事件"
+      operationEnum={SpecialEvent}
+      operationModifierMap={specialEventModifierMap}
+    />
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+      <div class="flex items-center gap-4">
+        <h6 class="text-xl font-semibold">特殊事件</h6>
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
+          setSpecialEventOpen(true)
+        }}>
+          添加
+        </button>
+        <div class="flex-grow" />
+        <span>该部分得分: {specialEventScore().toFixed(1)}</span>
+      </div>
+      {specialEventUI()}
+    </div>
+  </>
+
   // // 隐藏作战
   // const [hiddenOpen, setHiddenOpen] = createSignal(false);
   // const addHiddenRecord = (record: HiddenOperationRecord) => {
@@ -743,7 +908,7 @@ export function JingYunCup4() {
   </>
 
   const calcTotalSum = () => {
-    return emergencyScore() + bossScore() +
+    return emergencyScore() + specialEventScore() + bossScore() +
       calcLimitedOperatorsSum() + collectiblesScore() + withdrawScore() + tmpOperatorScore() + hiddensScore();
   }
 
@@ -865,6 +1030,7 @@ export function JingYunCup4() {
             </span>
             <OpeningPart />
             <EmergencyPart />
+            <SpecialEventPart />
             {/* <HiddenPart /> */}
             {/* <BossPart /> */}
             {bossUI()}

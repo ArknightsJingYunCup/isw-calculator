@@ -1,8 +1,7 @@
-import { Accessor, Component, createSignal, For, Index, JSX, Setter } from "solid-js";
-import { enumKeys, EnumLike, enumValues, StringEnum } from "../lib/utils";
+import { Accessor, Component, For, Index, JSX, Setter } from "solid-js";
+import { EnumLike, enumValues, StringEnum } from "../lib/utils";
 import { createListCollection, Select, ToggleGroup } from "@ark-ui/solid";
 import { Dialog } from "@ark-ui/solid/dialog";
-import { Checkbox } from "@ark-ui/solid/checkbox";
 import { Portal } from "solid-js/web";
 
 export function EnumSelectInput<E extends StringEnum>(
@@ -144,6 +143,7 @@ export function createWithdrawInput(withdraw: Accessor<number>, setWithdraw: Set
 export type ModifierRecord<O extends StringEnum, M extends StringEnum> = {
   operation: O[keyof O],
   modifiers: M[keyof M][],
+  extraData?: Record<string, any>, // 支持额外数据，如数量等
 }
 export type LevelModifierRecord<L extends StringEnum, O extends StringEnum, M extends StringEnum> = {
   [level in L[keyof L]]: ModifierRecord<O, M> | null
@@ -309,16 +309,23 @@ export function createModifierRecordTable<O extends StringEnum, M extends String
   operationModifierMap: FullOperationModifierMap<O, M>,
   onUpdateRecord: (index: number, record: ModifierRecord<O, M>) => void,
   onRemoveRecord: (index: number) => void,
+  extraUI?: (record: ModifierRecord<O, M>, index: number, onUpdate: (record: ModifierRecord<O, M>) => void) => JSX.Element,
+  calculateScore?: (record: ModifierRecord<O, M>) => number, // 自定义分数计算
 }): {
   score: Accessor<number>,
   ui: () => JSX.Element,
 } {
-  const { records, operationModifierMap, onUpdateRecord, onRemoveRecord } = props;
+  const { records, operationModifierMap, onUpdateRecord, onRemoveRecord, extraUI, calculateScore } = props;
 
-  const recordsScore = () => records().map((record) => record.modifiers.reduce((sum, modifier) => {
-    const modifierMap = operationModifierMap[record.operation];
-    return modifierMap[modifier]!(sum);
-  }, 0))
+  const recordsScore = () => records().map((record) => {
+    if (calculateScore) {
+      return calculateScore(record);
+    }
+    return record.modifiers.reduce((sum, modifier) => {
+      const modifierMap = operationModifierMap[record.operation];
+      return modifierMap[modifier]!(sum);
+    }, 0);
+  });
   const score = () => recordsScore().reduce((sum, x) => sum + x, 0);
 
   return {
@@ -356,9 +363,9 @@ export function createModifierRecordTable<O extends StringEnum, M extends String
                       }}
                       class="flex flex-grow"
                     >
-                      <For each={nonDefaultModifiers}>{(modifier, idx) => {
+                      <For each={nonDefaultModifiers}>{(modifier, modifierIdx) => {
                         const isSelected = () => record.modifiers.includes(modifier);
-                        const isLast = () => idx() === nonDefaultModifiers.length - 1;
+                        const isLast = () => modifierIdx() === nonDefaultModifiers.length - 1;
 
                         return (
                           <ToggleGroup.Item
@@ -377,6 +384,10 @@ export function createModifierRecordTable<O extends StringEnum, M extends String
                     </ToggleGroup.Root>
                   </div>
                 )}
+                
+                {/* Extra UI (e.g., for quantity input) */}
+                {extraUI && extraUI(record, idx(), (updatedRecord) => onUpdateRecord(idx(), updatedRecord))}
+                
                 <div class="flex-grow" />
 
                 {/* Delete button */}
