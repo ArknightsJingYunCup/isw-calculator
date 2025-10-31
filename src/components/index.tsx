@@ -184,7 +184,10 @@ export function ModifierSelector<O extends StringEnum, M extends StringEnum>(
           if (!e.value.includes(allModifiers[0])) {
             onUpdateModifiers([]);
           } else {
-            onUpdateModifiers(e.value as M[keyof M][]);
+            // 按照定义顺序排列选中的 modifiers
+            const selectedSet = new Set(e.value as M[keyof M][]);
+            const orderedModifiers = allModifiers.filter(m => selectedSet.has(m));
+            onUpdateModifiers(orderedModifiers);
           }
         }}
         class="flex"
@@ -355,10 +358,14 @@ export function createModifierRecordTable<O extends StringEnum, M extends String
                       multiple
                       value={record.modifiers.filter(m => m !== defaultModifier)}
                       onValueChange={(e) => {
-                        // 始终保留默认 modifier，加上选中的其他 modifiers
+                        // 始终保留默认 modifier，并按照定义顺序排列其他选中的 modifiers
+                        const selectedSet = new Set(e.value as M[keyof M][]);
+                        const orderedModifiers = allModifiers.filter(m => 
+                          m === defaultModifier || selectedSet.has(m)
+                        );
                         onUpdateRecord(idx(), {
                           ...record,
-                          modifiers: [defaultModifier, ...(e.value as M[keyof M][])]
+                          modifiers: orderedModifiers
                         });
                       }}
                       class="flex flex-grow"
