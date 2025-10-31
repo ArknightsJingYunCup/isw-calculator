@@ -237,7 +237,7 @@ const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOp
     [EmergencyOperationModifier.perfect]: (v: number) => v - 20,
   },
   [EmergencyOperation.其他]: {
-    [EmergencyOperationModifier。default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
   },
 }
 
