@@ -611,7 +611,7 @@ function createHiddensInput(
     score,
     ui: () => <>
       <div class="flex flex-col gap-2">
-        <span>临时招募</span>
+        <span>隐藏击杀</span>
         <div class="flex gap-1 max-w-full">
           <div class="flex flex-col gap-1 flex-1 min-w-0">
             <label class="text-sm text-gray-600">无鸭爵金币（+10）</label>
