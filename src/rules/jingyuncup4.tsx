@@ -23,7 +23,7 @@ enum LimitedOperator {
   酒神 = "酒神",
   水月 = "水月",
   玛恩纳 = "玛恩纳",
-  隐德莱希 = "隐德莱希",
+  隐德来希 = "隐德来希",
   逻各斯 = "逻各斯",
   阿斯卡纶 = "阿斯卡纶",
   娜仁图亚 = "娜仁图亚",
@@ -32,7 +32,7 @@ enum LimitedOperator {
   迷迭香 = "迷迭香",
   安洁莉娜 = "安洁莉娜",
   麒麟R夜刀 = "麒麟R夜刀",
-  伊内斯 = "伊内斯",
+  伊内丝 = "伊内丝",
   空弦 = "空弦",
   妮芙 = "妮芙",
 }
@@ -47,7 +47,7 @@ const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.酒神]: 4,
   [LimitedOperator.水月]: 4,
   [LimitedOperator.玛恩纳]: 3,
-  [LimitedOperator.隐德莱希]: 3,
+  [LimitedOperator.隐德来希]: 3,
   [LimitedOperator.逻各斯]: 3,
   [LimitedOperator.阿斯卡纶]: 3,
   [LimitedOperator.娜仁图亚]: 3,
@@ -56,7 +56,7 @@ const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.迷迭香]: 2,
   [LimitedOperator.安洁莉娜]: 1,
   [LimitedOperator.麒麟R夜刀]: 1,
-  [LimitedOperator.伊内斯]: 1,
+  [LimitedOperator.伊内丝]: 1,
   [LimitedOperator.空弦]: 1,
   [LimitedOperator.妮芙]: 1,
 };
@@ -149,9 +149,7 @@ enum BonusBossOperation {
   仁义武 = "仁·义·武",
   求道 = "求道",
   // 5
-  破岁阵祀 = "破岁阵祀",
   昔字如烟 = "昔字如烟",
-  天数将易 = "天数将易",
   往昔难忆 = "往昔难忆",
   // 6
   末狩 = "末狩",
@@ -163,8 +161,6 @@ const levelBossOperationListMap: LevelOperationListMap<typeof BossLevel, typeof 
     BonusBossOperation.求道,
   ],
   [Level.Fifth]: [
-    BonusBossOperation.破岁阵祀,
-    BonusBossOperation.天数将易,
     BonusBossOperation.昔字如烟,
     BonusBossOperation.往昔难忆,
   ],
@@ -227,7 +223,7 @@ const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOp
     [EmergencyOperationModifier.perfect]: (v: number) => v + 70,
   },
   [EmergencyOperation.越山海]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.default]: (v: number) => v + 30,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 100,
   },
   [EmergencyOperation.其他]: {
@@ -525,12 +521,6 @@ const bossOperationModiferMap: OperationModifierMap<typeof BonusBossOperation, t
     [OperationModifier.perfect]: (v: number) => v + 50,
   },
   // 5
-  [BonusBossOperation.破岁阵祀]: {
-    [OperationModifier.default]: (v: number) => v + 50,
-  },
-  [BonusBossOperation.天数将易]: {
-    [OperationModifier.default]: (v: number) => v + 150,
-  },
   [BonusBossOperation.昔字如烟]: {
     [OperationModifier.default]: (v: number) => v + 200,
     [OperationModifier.perfect]: (v: number) => v + 50,
@@ -628,11 +618,11 @@ function createHiddensInput(
         <span>临时招募</span>
         <div class="flex gap-1 max-w-full">
           <div class="flex flex-col gap-1 flex-1 min-w-0">
-            <label class="text-sm text-gray-600">无鸭爵金砖（+10）</label>
+            <label class="text-sm text-gray-600">无鸭爵金币（+10）</label>
             <NumberInput value={normalCnt} setValue={setNormalCnt} />
           </div>
           <div class="flex flex-col gap-1 flex-1 min-w-0">
-            <label class="text-sm text-gray-600">有鸭爵金砖（+30）</label>
+            <label class="text-sm text-gray-600">有鸭爵金币（+30）</label>
             <NumberInput value={withBonusCnt} setValue={setWithBonusCnt} />
           </div>
         </div>
