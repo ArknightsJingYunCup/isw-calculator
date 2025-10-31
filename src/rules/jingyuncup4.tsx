@@ -80,14 +80,14 @@ enum Squad {
   天师府分队 = "天师府分队",
   岁影回音分队 = "岁影回音分队",
   花团锦簇分队 = "花团锦簇分队",
-  棋行险着分队 = "棋行险着分队",
+  棋行险着分队 = "棋行险着分队"，
 }
 
 // MARK: EmergencyOperation
 enum Level {
-  First = "洪陆楼",
-  Second = "山水阁",
-  Third = "云瓦亭",
+  First = "洪陆楼"，
+  Second = "山水阁"，
+  Third = "云瓦亭"，
   Fourth = "汝吾门",
   Fifth = "见字祠",
   Sixth = "始末陵/明灭顶",
@@ -99,44 +99,44 @@ enum EmergencyOperation {
   青山不语 = "青山不语",
   离域检查 = "离域检查",
   薄礼一份 = "薄礼一份",
-  邙山镇地方志 = "邙山镇地方志",
-  不成烟火 = "不成烟火",
-  炎灼 = "炎灼",
+  邙山镇地方志 = "邙山镇地方志"，
+  不成烟火 = "不成烟火"，
+  炎灼 = "炎灼"，
   人镇 = "人镇",
-  借力打力 = "借力打力",
-  越山海 = "越山海",
-  普通·越山海 = "普通·越山海",
-  其他 = "其他",
+  借力打力 = "借力打力"，
+  越山海 = "越山海"，
+  普通·越山海 = "普通·越山海"，
+  其他 = "其他"，
 }
 const levelEmergencyOperationMap: LevelOperationListMap<typeof Level, typeof EmergencyOperation> = {
   [Level.First]: [
-    EmergencyOperation.其他,
-  ],
+    EmergencyOperation.其他，
+  ]，
   [Level.Second]: [
-    EmergencyOperation.其他,
-  ],
+    EmergencyOperation.其他，
+  ]，
   [Level.Third]: [
-    EmergencyOperation.其他,
-  ],
+    EmergencyOperation.其他，
+  ]，
   [Level.Fourth]: [
-    EmergencyOperation.峥嵘战功,
-    EmergencyOperation.赶场戏班,
-    EmergencyOperation.其他,
-  ],
+    EmergencyOperation.峥嵘战功，
+    EmergencyOperation.赶场戏班，
+    EmergencyOperation.其他，
+  ]，
   [Level.Fifth]: [
-    EmergencyOperation.青山不语,
-    EmergencyOperation.离域检查,
-    EmergencyOperation.薄礼一份,
-    EmergencyOperation.邙山镇地方志,
-    EmergencyOperation.不成烟火,
-    EmergencyOperation.其他,
-  ],
+    EmergencyOperation.青山不语，
+    EmergencyOperation.离域检查，
+    EmergencyOperation.薄礼一份，
+    EmergencyOperation.邙山镇地方志，
+    EmergencyOperation.不成烟火，
+    EmergencyOperation.其他，
+  ]，
   [Level.Sixth]: [
-    EmergencyOperation.炎灼,
-    EmergencyOperation.人镇,
-    EmergencyOperation.借力打力,
-    EmergencyOperation.越山海,
-    EmergencyOperation.普通·越山海,
+    EmergencyOperation.炎灼，
+    EmergencyOperation.人镇，
+    EmergencyOperation.借力打力，
+    EmergencyOperation.越山海，
+    EmergencyOperation.普通·越山海，
   ]
 }
 
@@ -168,10 +168,10 @@ const levelBossOperationListMap: LevelOperationListMap<typeof BossLevel, typeof 
     BonusBossOperation.破岁阵祀,
     BonusBossOperation.天数将易,
     BonusBossOperation.昔字如烟,
-    BonusBossOperation.往昔难忆,
-  ],
+    BonusBossOperation.往昔难忆，
+  ]，
   [Level.Sixth]: [
-    BonusBossOperation.末狩,
+    BonusBossOperation.末狩，
   ]
 }
 
@@ -181,7 +181,7 @@ const emergencyOperationBaseScore = 50;
 // 无漏定义为：关卡内未损失目标生命值，且摧毁所有雕伥。非无漏时，紧急作战加分降为原有的50%
 
 enum EmergencyOperationModifier {
-  default = "",
+  默认 = "",
   perfect = "无漏",
 }
 
@@ -189,33 +189,33 @@ enum EmergencyOperationModifier {
 // 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
 const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOperation, typeof EmergencyOperationModifier> = {
   [EmergencyOperation.峥嵘战功]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.默认]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
   },
   [EmergencyOperation.赶场戏班]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.默认]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
-  },
+  }，
   [EmergencyOperation.青山不语]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.默认]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
-  },
+  }，
   [EmergencyOperation.离域检查]: {
     [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
-  },
+  }，
   [EmergencyOperation.薄礼一份]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.默认]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
-  },
+  }，
   [EmergencyOperation.邙山镇地方志]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.默认]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
-  },
+  }，
   [EmergencyOperation.不成烟火]: {
     [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 50,
-  },
+  }，
   [EmergencyOperation.炎灼]: {
     [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
@@ -223,25 +223,25 @@ const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOp
   [EmergencyOperation.人镇]: {
     [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
-  },
+  }，
   [EmergencyOperation.借力打力]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.默认]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 70,
-  },
+  }，
   [EmergencyOperation.越山海]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.默认]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 100,
-  },
+  }，
   [EmergencyOperation.普通·越山海]: {
     [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore - emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v - 20,
-  },
+  }，
   [EmergencyOperation.其他]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
-  },
+    [EmergencyOperationModifier.默认]: (v: number) => v + emergencyOperationBaseScore,
+  }，
 }
 
-type EmergencyOperationRecord = ModifierRecord<typeof EmergencyOperation, typeof EmergencyOperationModifier>;
+输入 EmergencyOperationRecord = ModifierRecord<typeof EmergencyOperation, typeof EmergencyOperationModifier>;
 
 // MARK: SpecialEvent
 enum SpecialEvent {
@@ -260,7 +260,7 @@ enum SpecialEvent {
 }
 
 enum SpecialEventModifier {
-  default = "",
+  默认 = "",
   emergency = "紧急",
   perfect = "无漏",
 }
@@ -285,17 +285,17 @@ enum SpecialEventModifier {
 // 非无漏时，特殊事件加分降为原有的50%
 const specialEventModifierMap: FullOperationModifierMap<typeof SpecialEvent, typeof SpecialEventModifier> = {
   [SpecialEvent.源源不断]: {
-    [SpecialEventModifier.default]: (v: number) => v + 10,  // 基础 50%
+    [SpecialEventModifier.默认]: (v: number) => v + 10,  // 基础 50%
     [SpecialEventModifier.emergency]: (v: number) => v + 5,  // 紧急额外 +5
     [SpecialEventModifier.perfect]: (v: number) => v * 2,   // 无漏翻倍
-  },
+  }，
   [SpecialEvent.闪闪发光]: {
-    [SpecialEventModifier.default]: (v: number) => v + 10,
+    [SpecialEventModifier.默认]: (v: number) => v + 10,
     [SpecialEventModifier.emergency]: (v: number) => v + 5,
     [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
+  }，
   [SpecialEvent.循循善诱]: {
-    [SpecialEventModifier.default]: (v: number) => v + 10,  // 普通 20
+    [SpecialEventModifier.默认]: (v: number) => v + 10,  // 普通 20
     [SpecialEventModifier.emergency]: (v: number) => v + 15, // 紧急 50 (10+15)*2
     [SpecialEventModifier.perfect]: (v: number) => v * 2,
   },
@@ -330,21 +330,21 @@ const specialEventModifierMap: FullOperationModifierMap<typeof SpecialEvent, typ
     [SpecialEventModifier.default]: (v: number) => v + 0,
     [SpecialEventModifier.emergency]: (v: number) => v + 25, // 紧急 50
     [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
+  }，
   [SpecialEvent.紧急彻底失控]: {
-    [SpecialEventModifier.default]: (v: number) => v + 0,
+    [SpecialEventModifier.默认]: (v: number) => v + 0,
     [SpecialEventModifier.emergency]: (v: number) => v + 30, // 紧急 60
     [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
+  }，
   [SpecialEvent.为崖作伥]: {
-    [SpecialEventModifier.default]: (v: number) => v,
+    [SpecialEventModifier.默认]: (v: number) => v,
     [SpecialEventModifier.perfect]: (v: number) => v * 2,   // 为崖作伥也受无漏影响
     // 基础分数由 extraData.count 计算: 3 * count
     // 无漏时: 3 * count * 2
-  },
+  }，
 }
 
-type SpecialEventRecord = ModifierRecord<typeof SpecialEvent, typeof SpecialEventModifier>;
+输入 SpecialEventRecord = ModifierRecord<typeof SpecialEvent, typeof SpecialEventModifier>;
 
 // MARK: ChaosNode (是非境祸乱)
 enum ChaosNode {
@@ -376,18 +376,18 @@ type TmpOperatorsCnt = {
   fourStar: number,
 }
 
-type HiddensCnt = {
+输入 HiddensCnt = {
   normal: number,
   withBonus: number,
 }
 
-type BossRecords = LevelModifierRecord<typeof BossLevel, typeof BonusBossOperation, typeof OperationModifier>;
-type Store = {
-  squad: Squad | null,
-  limitedOperators: LimitedOperator[],
-  emergencyRecords: EmergencyOperationRecord[],
-  specialEventRecords: SpecialEventRecord[],
-  chaosNodeRecords: ChaosNodeRecord[],
+输入 BossRecords = LevelModifierRecord<typeof BossLevel, typeof BonusBossOperation, typeof OperationModifier>;
+输入 Store = {
+  squad: Squad | null，
+  limitedOperators: LimitedOperator[]，
+  emergencyRecords: EmergencyOperationRecord[]，
+  specialEventRecords: SpecialEventRecord[]，
+  chaosNodeRecords: ChaosNodeRecord[]，
   bossRecords: BossRecords,
   withdrawCnt: number,
   collectiblesCnt: number,
@@ -397,7 +397,7 @@ type Store = {
 }
 
 enum OperationModifier {
-  default = "",
+  默认 = "",
   perfect = "无漏",
   忘生玲珑 = "忘生玲珑",
 }
@@ -408,36 +408,36 @@ const testStoreValue: Store = {
   squad: null,
   limitedOperators: [
     LimitedOperator.电弧
-  ],
+  ]，
   emergencyRecords: [
     {
       operation: EmergencyOperation.峥嵘战功,
       modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
-    },
+    }，
     {
-      operation: EmergencyOperation.赶场戏班,
-      modifiers: [EmergencyOperationModifier.default],
-    },
+      operation: EmergencyOperation.赶场戏班，
+      modifiers: [EmergencyOperationModifier.默认]，
+    }，
     {
-      operation: EmergencyOperation.青山不语,
-      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
-    },
+      operation: EmergencyOperation.青山不语，
+      modifiers: [EmergencyOperationModifier.默认, EmergencyOperationModifier.perfect]，
+    }，
     {
-      operation: EmergencyOperation.越山海,
-      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
-    },
+      operation: EmergencyOperation.越山海，
+      modifiers: [EmergencyOperationModifier.默认, EmergencyOperationModifier.perfect]，
+    }，
     {
-      operation: EmergencyOperation.普通·越山海,
-      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
+      operation: EmergencyOperation.普通·越山海，
+      modifiers: [EmergencyOperationModifier.默认, EmergencyOperationModifier.perfect]，
     }
-  ],
+  ]，
   specialEventRecords: [
     {
       operation: SpecialEvent.源源不断,
-      modifiers: [SpecialEventModifier.default, SpecialEventModifier.perfect], // 普通无漏: (10) * 2 = 20
-    },
+      modifiers: [SpecialEventModifier.默认, SpecialEventModifier.perfect]， // 普通无漏: (10) * 2 = 20
+    }，
     {
-      operation: SpecialEvent.闪闪发光,
+      operation: SpecialEvent.闪闪发光，
       modifiers: [SpecialEventModifier.default, SpecialEventModifier.emergency], // 紧急非无漏: 10 + 5 = 15
     },
     {
@@ -661,9 +661,9 @@ function createTmpOperatorInput(
   score: Accessor<number>,
   ui: () => JSX.Element,
 } {
-  const sixStarCnt = () => tmpOperatorsCnt().sixStar;
-  const fiveStarCnt = () => tmpOperatorsCnt().fiveStar;
-  const fourStarCnt = () => tmpOperatorsCnt().fourStar;
+  const sixStarCnt = () => tmpOperatorsCnt()。sixStar;
+  const fiveStarCnt = () => tmpOperatorsCnt()。fiveStar;
+  const fourStarCnt = () => tmpOperatorsCnt()。fourStar;
   const setSixStarCnt = (v: number): void => { setTmpOperatorsCnt((cnt) => ({ ...cnt, sixStar: v })); };
   const setFiveStarCnt = (v: number): void => { setTmpOperatorsCnt((cnt) => ({ ...cnt, fiveStar: v })); };
   const setFourStarCnt = (v: number): void => { setTmpOperatorsCnt((cnt) => ({ ...cnt, fourStar: v })); };
@@ -673,7 +673,7 @@ function createTmpOperatorInput(
   const FOUR_STAR_SCORE = 10;
   const score = () => sixStarCnt() * SIX_STAR_SCORE + fiveStarCnt() * FIVE_STAR_SCORE + fourStarCnt() * FOUR_STAR_SCORE;
   return {
-    score，
+    score,
     ui: () => <>
       <div class="flex flex-col gap-2">
         <span>临时招募</span>
@@ -702,7 +702,7 @@ function createTmpOperatorInput(
 export function JingYunCup4() {
   const sm = createMediaQuery("(max-width: 600px)");
 
-  const [store, setStore] = createStore<Store>({ ...defaultStoreValue });
+  const [store， setStore] = createStore<Store>({ ...defaultStoreValue });
   // const [store, setStore] = createStore<Store>({ ...testStoreValue });
 
   // MARK: UI: 开局设置
@@ -710,34 +710,34 @@ export function JingYunCup4() {
     <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 z-20">
       <h6 class="text-xl font-semibold">开局设置</h6>
       <div class="flex gap-4 flex-wrap justify-stretch">
-        {EnumSelectInput(Squad, () => store.squad, (v) => setStore("squad", v))}
+        {EnumSelectInput(Squad, () => store.squad， (v) => setStore("squad", v))}
       </div>
     </div>
   </>
 
   // MARK: UI: 紧急作战
-  const [emergencyOpen, setEmergencyOpen] = createSignal(false);
+  const [emergencyOpen， setEmergencyOpen] = createSignal(false);
   const addEmergencyRecord = (record: EmergencyOperationRecord) => {
-    setStore('emergencyRecords', (operations) => [...operations, record])
+    setStore('emergencyRecords'， (operations) => [...operations, record])
   }
   const updateEmergencyRecord = (idx: number, record: EmergencyOperationRecord) => {
     setStore('emergencyRecords', idx, record)
   }
   const removeEmergencyRecord = (idx: number) => {
-    setStore('emergencyRecords', (operations) => operations.filter((_, i) =>
+    setStore('emergencyRecords'， (operations) => operations.filter((_, i) =>
       i !== idx
     ))
   }
 
   const calcEmergencySum = () => {
-    return store.emergencyRecords.reduce((sum, record) => {
-      return record.modifiers.reduce((recordSum, modifier) => {
+    return store.emergencyRecords。reduce((sum， record) => {
+      return record.modifiers.reduce((recordSum， modifier) => {
         return emergencyOperationModifierMap[record.operation][modifier]!(recordSum);
-      }, 0);
-    }, 0);
+      }， 0);
+    }， 0);
   }
-  const { score: emergencyScore, ui: emergencyUI } = createModifierRecordTable({
-    records: () => store.emergencyRecords,
+  const { score: emergencyScore， ui: emergencyUI } = createModifierRecordTable({
+    records: () => store.emergencyRecords，
     operationModifierMap: emergencyOperationModifierMap,
     onUpdateRecord: updateEmergencyRecord,
     onRemoveRecord: removeEmergencyRecord,
@@ -775,16 +775,16 @@ export function JingYunCup4() {
   // MARK: UI: 特殊事件
   const [specialEventOpen, setSpecialEventOpen] = createSignal(false);
   const addSpecialEventRecord = (record: SpecialEventRecord) => {
-    setStore('specialEventRecords', (records) => [...records, record])
+    setStore('specialEventRecords'， (records) => [...records, record])
   }
   const updateSpecialEventRecord = (idx: number, record: SpecialEventRecord) => {
     setStore('specialEventRecords', idx, record)
   }
   const removeSpecialEventRecord = (idx: number) => {
-    setStore('specialEventRecords', (records) => records.filter((_, i) => i !== idx))
+    setStore('specialEventRecords'， (records) => records.filter((_， i) => i !== idx))
   }
 
-  const { score: specialEventScore, ui: specialEventUI } = createModifierRecordTable({
+  const { score: specialEventScore， ui: specialEventUI } = createModifierRecordTable({
     records: () => store.specialEventRecords,
     operationModifierMap: specialEventModifierMap,
     onUpdateRecord: updateSpecialEventRecord,
@@ -795,27 +795,27 @@ export function JingYunCup4() {
         const count = record.extraData?.count || 0;
         const baseScore = count * 1.5;
         // 应用 modifiers（如 perfect 翻倍）
-        return record.modifiers.reduce((sum, modifier) => {
+        return record.modifiers。reduce((sum， modifier) => {
           return specialEventModifierMap[record.operation][modifier]!(sum);
         }, baseScore);
       }
       // 其他事件使用默认计算
-      return record.modifiers.reduce((sum, modifier) => {
+      return record.modifiers。reduce((sum， modifier) => {
         return specialEventModifierMap[record.operation][modifier]!(sum);
-      }, 0);
-    },
-    extraUI: (record, idx, onUpdate) => {
+      }， 0);
+    }，
+    extraUI: (record， idx, onUpdate) => {
       // 为崖作伥额外显示数量输入
       if (record.operation === SpecialEvent.为崖作伥) {
         return (
           <div class="flex items-center gap-2 border border-gray-300 rounded px-2">
             <span class="text-sm text-gray-600">坠崖数:</span>
             <input
-              type="number"
+              输入="number"
               class="w-16 px-2 py-1 text-sm border-none focus:outline-none"
               value={record.extraData?.count || 0}
               onInput={(e) => {
-                const count = parseInt(e.currentTarget.value) || 0;
+                const count = parseInt(e.currentTarget。value) || 0;
                 onUpdate({
                   ...record,
                   extraData: { count }
@@ -854,19 +854,19 @@ export function JingYunCup4() {
   </>
 
   // MARK: UI: 是非境祸乱
-  const [chaosNodeOpen, setChaosNodeOpen] = createSignal(false);
+  const [chaosNodeOpen， setChaosNodeOpen] = createSignal(false);
   const addChaosNodeRecord = (record: ChaosNodeRecord) => {
-    setStore('chaosNodeRecords', (records) => [...records, record])
+    setStore('chaosNodeRecords'， (records) => [...records, record])
   }
   const updateChaosNodeRecord = (idx: number, record: ChaosNodeRecord) => {
     setStore('chaosNodeRecords', idx, record)
   }
   const removeChaosNodeRecord = (idx: number) => {
-    setStore('chaosNodeRecords', (records) => records.filter((_, i) => i !== idx))
+    setStore('chaosNodeRecords'， (records) => records.filter((_， i) => i !== idx))
   }
 
-  const { score: chaosNodeScore, ui: chaosNodeUI } = createModifierRecordTable({
-    records: () => store.chaosNodeRecords,
+  const { score: chaosNodeScore， ui: chaosNodeUI } = createModifierRecordTable({
+    records: () => store.chaosNodeRecords，
     operationModifierMap: chaosNodeModifierMap,
     onUpdateRecord: updateChaosNodeRecord,
     onRemoveRecord: removeChaosNodeRecord,
@@ -897,14 +897,14 @@ export function JingYunCup4() {
   </>
 
   // MARK: UI: 领袖作战
-  const { score: bossScore, ui: bossUI } = createBossOperationInput(() => store.bossRecords, (bossRecords) => setStore('bossRecords', bossRecords));
+  const { score: bossScore， ui: bossUI } = createBossOperationInput(() => store.bossRecords, (bossRecords) => setStore('bossRecords', bossRecords));
 
 
   const calcLimitedOperatorCosts = () => {
-    return store.limitedOperators.reduce((sum, operator) => sum + limitedOperatorCostMap[operator], 0);
+    return store.limitedOperators.reduce((sum， operator) => sum + limitedOperatorCostMap[operator], 0);
   }
   const calcLimitedOperatorsSum = () => {
-    return Math.max(0, (calcLimitedOperatorCosts() - 10)) * -500;
+    return Math.max(0， (calcLimitedOperatorCosts() - 10)) * -500;
   }
 
   // MARK: UI: 阵容规则
@@ -919,7 +919,7 @@ export function JingYunCup4() {
       <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣500分。</span>
       {EnumMultiSelectInput(
         LimitedOperator,
-        () => store.limitedOperators,
+        () => store.limitedOperators，
         (v) => setStore("limitedOperators", v),
         (v) => <span>{v}（{limitedOperatorCostMap[v]}）</span>,
       )}
@@ -929,7 +929,7 @@ export function JingYunCup4() {
   // 1. 完成比赛时，每持有一个收藏品，额外加 5 分，上限750分。
   const { score: collectiblesScore, ui: collectiblesUI } = createCollectibleInput(
     () => store.collectiblesCnt, (v) => setStore("collectiblesCnt", v),
-    5, 750
+    5， 750
   );
   // 2. 比赛期间消耗前瞻性投资余额小于 60 的不扣分，若消耗量超过 60 源石锭，每超出 1 点源石锭扣除 50 分
   const { score: withdrawScore, ui: withdrawUI } = createWithdrawInput(
@@ -990,11 +990,11 @@ export function JingYunCup4() {
 
   // TODO: 窄屏适配
   enum Tab {
-    Operation = "作战",
+    Operation = "作战"，
     OperatorsAndKingsCollectible = "阵容和国王套",
     Others = "其他",
   }
-  const [tab, setTab] = createSignal(Tab.Operation);
+  const [tab， setTab] = createSignal(Tab.Operation);
 
   return <>
     <Switch>
