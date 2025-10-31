@@ -3,6 +3,7 @@ import { EnumLike, enumValues, StringEnum } from "../lib/utils";
 import { createListCollection, Select, ToggleGroup } from "@ark-ui/solid";
 import { Dialog } from "@ark-ui/solid/dialog";
 import { Portal } from "solid-js/web";
+import { Level, levelNum } from "../rules/jingyuncup4";
 
 export function EnumSelectInput<E extends StringEnum>(
   e: E,
@@ -311,7 +312,7 @@ export function AddDefaultModifierRecordModal<L extends StringEnum, O extends St
                     const operations = levelOperationMap.map[level];
                     return <>
                       <div class="flex flex-col gap-2">
-                        <span class="font-medium">第 {idx() + 1} 层：{level}</span>
+                        <span class="font-medium">第 {levelNum(level as Level)} 层：{level}</span>
                         <div class="flex flex-wrap gap-2">
                           <For each={operations}>{(operation) => <>
                             <button

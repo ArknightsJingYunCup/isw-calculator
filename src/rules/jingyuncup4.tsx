@@ -8,7 +8,7 @@ import { enumKeys, enumValues, readJson, saveJson, StringEnum } from "../lib/uti
 import { createMediaQuery } from "@solid-primitives/media";
 import { AddDefaultModifierRecordModal, createCollectibleInput, createModifierRecordTable, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, EnumToggleGroup, FullOperationModifierMap, LevelModifierRecord, LevelOperationListMap, ModifierRecord, ModifierSelector, NumberInput, OperationModifierMap } from "../components";
 
-function levelNum(level: Level): number {
+export function levelNum(level: Level): number {
   return enumValues(Level).indexOf(level) + 1;
 }
 
@@ -94,7 +94,7 @@ const openingSquadFactorMap: { [key in OpeningSquad]: number } = {
 };
 
 // MARK: EmergencyOperation
-enum Level {
+export enum Level {
   First = "洪陆楼",
   Second = "山水阁",
   Third = "云瓦亭",
