@@ -45,6 +45,44 @@ export function EnumSelectInput<E extends StringEnum>(
   </>
 }
 
+export function EnumToggleGroup<E extends StringEnum>(
+  e: E,
+  selected: Accessor<E[keyof E] | null>,
+  setSelected: (v: E[keyof E]) => void,
+  entryElem: (value: E[keyof E]) => JSX.Element,
+) {
+  const values = enumValues(e);
+  return <>
+    <div class="flex border border-gray-300 rounded overflow-hidden">
+      <ToggleGroup.Root
+        value={selected() ? [selected() as string] : []}
+        onValueChange={(details) => {
+          if (details.value.length > 0) {
+            setSelected(details.value[0] as E[keyof E]);
+          }
+        }}
+        class="flex"
+      >
+        <For each={values}>{(value, idx) => {
+          const isSelected = () => selected() === value;
+          const isLast = () => idx() === values.length - 1;
+          return <ToggleGroup.Item 
+            value={value as string}
+            class="px-4 py-2 transition-colors cursor-pointer"
+            classList={{
+              "bg-blue-500 text-white": isSelected(),
+              "text-gray-700 hover:bg-gray-50": !isSelected(),
+              "border-r border-gray-300": !isLast(),
+            }}
+          >
+            {entryElem(value)}
+          </ToggleGroup.Item>
+        }}</For>
+      </ToggleGroup.Root>
+    </div>
+  </>
+}
+
 export function MultiSelectInput<T>(
   items: T[],
   selected: Accessor<T[]>, setSelected: Setter<T[]>,

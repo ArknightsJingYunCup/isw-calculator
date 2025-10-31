@@ -6,7 +6,7 @@ import { Portal } from "solid-js/web";
 import { createStore, produce } from "solid-js/store";
 import { enumKeys, enumValues, readJson, saveJson, StringEnum } from "../lib/utils";
 import { createMediaQuery } from "@solid-primitives/media";
-import { AddDefaultModifierRecordModal, createCollectibleInput, createModifierRecordTable, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, FullOperationModifierMap, LevelModifierRecord, LevelOperationListMap, ModifierRecord, ModifierSelector, NumberInput, OperationModifierMap } from "../components";
+import { AddDefaultModifierRecordModal, createCollectibleInput, createModifierRecordTable, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, EnumToggleGroup, FullOperationModifierMap, LevelModifierRecord, LevelOperationListMap, ModifierRecord, ModifierSelector, NumberInput, OperationModifierMap } from "../components";
 
 function levelNum(level: Level): number {
   return enumValues(Level).indexOf(level) + 1;
@@ -82,6 +82,16 @@ enum Squad {
   花团锦簇分队 = "花团锦簇分队",
   棋行险着分队 = "棋行险着分队",
 }
+
+enum OpeningSquad {
+  其他 = "其他",
+  游客分队 = "游客分队",
+}
+
+const openingSquadFactorMap: { [key in OpeningSquad]: number } = {
+  [OpeningSquad.其他]: 0,
+  [OpeningSquad.游客分队]: -0.1,
+};
 
 // MARK: EmergencyOperation
 enum Level {
@@ -369,7 +379,7 @@ type HiddensCnt = {
 
 type BossRecords = LevelModifierRecord<typeof BossLevel, typeof BonusBossOperation, typeof OperationModifier>;
 type Store = {
-  squad: Squad | null,
+  squad: OpeningSquad,
   limitedOperators: LimitedOperator[],
   emergencyRecords: EmergencyOperationRecord[],
   specialEventRecords: SpecialEventRecord[],
@@ -390,8 +400,7 @@ enum OperationModifier {
 
 // 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
 const testStoreValue: Store = {
-  // squad: Squad.游客分队,
-  squad: null,
+  squad: OpeningSquad.其他,
   limitedOperators: [
     LimitedOperator.电弧
   ],
@@ -480,7 +489,7 @@ const testStoreValue: Store = {
 };
 
 const defaultStoreValue: Store = {
-  squad: null,
+  squad: OpeningSquad.其他,
   limitedOperators: [],
   emergencyRecords: [],
   specialEventRecords: [],
@@ -684,9 +693,14 @@ export function JingYunCup4() {
   // MARK: UI: 开局设置
   const OpeningPart: Component = () => <>
     <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 z-20">
-      <h6 class="text-xl font-semibold">开局设置</h6>
+      <h6 class="text-xl font-semibold">开局分队</h6>
       <div class="flex gap-4 flex-wrap justify-stretch">
-        {EnumSelectInput(Squad, () => store.squad, (v) => setStore("squad", v))}
+        {EnumToggleGroup(
+          OpeningSquad,
+          () => store.squad,
+          (v) => setStore("squad", v),
+          (v) => <span>{v}{v === OpeningSquad.游客分队 ? "（-0.1）" : ""}</span>
+        )}
       </div>
     </div>
   </>
@@ -920,7 +934,7 @@ export function JingYunCup4() {
   // 5. 比赛时，每名选手的基础结算分倍率为1。使用游客分队比赛时，该倍率-0.1。抓取干员电弧时，该倍率-0.05。
   const factor = () => {
     return 1.0 +
-      (store.squad == Squad.游客分队 ? -0.1 : 0) +
+      openingSquadFactorMap[store.squad] +
       (store.limitedOperators.includes(LimitedOperator.电弧) ? -0.05 : 0);
   }
   const factoredScore = () => {
