@@ -28,13 +28,13 @@ enum LimitedOperator {
   阿斯卡纶 = "阿斯卡纶",
   娜仁图亚 = "娜仁图亚",
   琳琅诗怀雅 = "琳琅诗怀雅",
-  安洁莉娜 = "安洁莉娜",
   凯尔希 = "凯尔希",
+  迷迭香 = "迷迭香",
+  安洁莉娜 = "安洁莉娜",
   麒麟R夜刀 = "麒麟R夜刀",
   伊内斯 = "伊内斯",
   空弦 = "空弦",
   妮芙 = "妮芙",
-  迷迭香 = "迷迭香",
 }
 
 const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
@@ -52,13 +52,13 @@ const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.阿斯卡纶]: 3,
   [LimitedOperator.娜仁图亚]: 3,
   [LimitedOperator.琳琅诗怀雅]: 3,
+  [LimitedOperator.凯尔希]: 2,
+  [LimitedOperator.迷迭香]: 2,
   [LimitedOperator.安洁莉娜]: 1,
-  [LimitedOperator.凯尔希]: 1,
   [LimitedOperator.麒麟R夜刀]: 1,
   [LimitedOperator.伊内斯]: 1,
   [LimitedOperator.空弦]: 1,
   [LimitedOperator.妮芙]: 1,
-  [LimitedOperator.迷迭香]: 1,
 };
 
 enum Squad {
@@ -173,8 +173,8 @@ const levelBossOperationListMap: LevelOperationListMap<typeof BossLevel, typeof 
   ]
 }
 
-// 每通过一个紧急作战，加20分（以结算页面为准）。
-const emergencyOperationBaseScore = 20;
+// 每通过一个紧急作战，加50分（以结算页面为准）。
+const emergencyOperationBaseScore = 50;
 // 无漏通过以下紧急关时，获得对应分数
 // 无漏定义为：关卡内未损失目标生命值，且摧毁所有雕伥。非无漏时，紧急作战加分降为原有的50%
 
@@ -340,6 +340,29 @@ const specialEventModifierMap: FullOperationModifierMap<typeof SpecialEvent, typ
 
 type SpecialEventRecord = ModifierRecord<typeof SpecialEvent, typeof SpecialEventModifier>;
 
+// MARK: ChaosNode (是非境祸乱)
+enum ChaosNode {
+  地有四难 = "地有四难",
+  迷惘 = "迷惘",
+}
+
+enum ChaosNodeModifier {
+  perfect = "无漏",
+}
+
+// 是非境祸乱加分规则
+// 仅无漏通过时获得对应分数
+const chaosNodeModifierMap: FullOperationModifierMap<typeof ChaosNode, typeof ChaosNodeModifier> = {
+  [ChaosNode.地有四难]: {
+    [ChaosNodeModifier.perfect]: (v: number) => v + 30,
+  },
+  [ChaosNode.迷惘]: {
+    [ChaosNodeModifier.perfect]: (v: number) => v + 30,
+  },
+}
+
+type ChaosNodeRecord = ModifierRecord<typeof ChaosNode, typeof ChaosNodeModifier>;
+
 // MARK: Store
 type TmpOperatorsCnt = {
   sixStar: number,
@@ -358,6 +381,7 @@ type Store = {
   limitedOperators: LimitedOperator[],
   emergencyRecords: EmergencyOperationRecord[],
   specialEventRecords: SpecialEventRecord[],
+  chaosNodeRecords: ChaosNodeRecord[],
   bossRecords: BossRecords,
   withdrawCnt: number,
   collectiblesCnt: number,
@@ -425,7 +449,17 @@ const testStoreValue: Store = {
     {
       operation: SpecialEvent.为崖作伥,
       modifiers: [SpecialEventModifier.default, SpecialEventModifier.perfect],
-      extraData: { count: 5 }, // 无漏: 3 * 5 * 2 = 30, 非无漏: 3 * 5 = 15
+      extraData: { count: 5 }, // 无漏: 1.5 * 5 * 2 = 15, 非无漏: 1.5 * 5 = 7.5
+    }
+  ],
+  chaosNodeRecords: [
+    {
+      operation: ChaosNode.地有四难,
+      modifiers: [ChaosNodeModifier.perfect],
+    },
+    {
+      operation: ChaosNode.迷惘,
+      modifiers: [ChaosNodeModifier.perfect],
     }
   ],
   bossRecords: {
@@ -458,6 +492,7 @@ const defaultStoreValue: Store = {
   limitedOperators: [],
   emergencyRecords: [],
   specialEventRecords: [],
+  chaosNodeRecords: [],
   bossRecords: {
     [Level.Third]: null,
     [Level.Fifth]: null,
@@ -657,8 +692,8 @@ function createTmpOperatorInput(
 export function JingYunCup4() {
   const sm = createMediaQuery("(max-width: 600px)");
 
-  // const [store, setStore] = createStore<Store>({ ...defaultStoreValue });
-  const [store, setStore] = createStore<Store>({ ...testStoreValue });
+  const [store, setStore] = createStore<Store>({ ...defaultStoreValue });
+  // const [store, setStore] = createStore<Store>({ ...testStoreValue });
 
   // MARK: UI: 开局设置
   const OpeningPart: Component = () => <>
@@ -808,90 +843,49 @@ export function JingYunCup4() {
     </div>
   </>
 
-  // // 隐藏作战
-  // const [hiddenOpen, setHiddenOpen] = createSignal(false);
-  // const addHiddenRecord = (record: HiddenOperationRecord) => {
-  //   setStore('hiddenRecords', (operations) => [...operations, record])
-  // }
-  // const updateHiddenRecord = (idx: number, record: HiddenOperationRecord) => {
-  //   setStore('hiddenRecords', (operations) => operations.map((operation, i) =>
-  //     i !== idx ? operation : record
-  //   ))
-  // }
-  // const removeHiddenRecord = (idx: number) => {
-  //   setStore('hiddenRecords', (operations) => operations.filter((_, i) =>
-  //     i !== idx
-  //   ))
-  // }
-  // const HiddenPart = () => <>
-  //   <AddHiddenRecordModal open={hiddenOpen} onClose={() => {
-  //     setHiddenOpen(false);
-  //   }} onAddRecord={addHiddenRecord} />
-  //   <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
-  //     <div class="flex items-center gap-4">
-  //       <h6 class="text-xl font-semibold">隐藏作战</h6>
-  //       <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
-  //         setHiddenOpen(true)
-  //       }}>
-  //         添加
-  //       </button>
-  //       <div class="flex-grow" />
-  //       <span>该部分得分: {calcHiddenSum().toFixed(1)}</span>
-  //     </div>
-  //     <div class="flex justify-stretch gap-2">
-  //       <div class="flex-1 overflow-x-auto">
-  //         <table class="w-full text-sm">
-  //           <thead>
-  //             <tr class="border-b">
-  //               <th class="text-left p-2">名称</th>
-  //               <th class="text-left p-2">无漏</th>
-  //               <th class="text-right p-2">分数</th>
-  //               <th class="text-center p-2">操作</th>
-  //             </tr>
-  //           </thead>
-  //           <tbody>
-  //             <For each={store.hiddenRecords}>
-  //               {(item, idx) => (
-  //                 <tr class="border-b last:border-0">
-  //                   <td class="p-2" classList={{ "text-red-500": item.emergency }}>
-  //                     {item.operation}
-  //                     <Show when={item.emergency}>
-  //                       （紧急）
-  //                     </Show>
-  //                   </td>
-  //                   <td class="p-2">
-  //                     <KCheckbox.Root
-  //                       checked={item.perfect}
-  //                       onChange={(v) => {
-  //                         updateHiddenRecord(idx(), { ...item, perfect: v });
-  //                       }}
-  //                       class="inline-flex items-center"
-  //                     >
-  //                       <KCheckbox.Input class="sr-only" />
-  //                       <KCheckbox.Control class="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center ui-checked:bg-blue-500 ui-checked:border-blue-500">
-  //                         <KCheckbox.Indicator>
-  //                           <svg class="w-3 h-3 text-white" viewBox="0 0 12 10" fill="none">
-  //                             <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-  //                           </svg>
-  //                         </KCheckbox.Indicator>
-  //                       </KCheckbox.Control>
-  //                     </KCheckbox.Root>
-  //                   </td>
-  //                   <td class="text-right p-2">{calcHiddenRecordScore(idx()).toFixed(1)}</td>
-  //                   <td class="text-center p-2">
-  //                     <button class="text-red-500 hover:text-red-700 p-1" onClick={() => removeHiddenRecord(idx())}>
-  //                       <span class="i-mdi-delete text-xl"></span>
-  //                     </button>
-  //                   </td>
-  //                 </tr>
-  //               )}
-  //             </For>
-  //           </tbody>
-  //         </table>
-  //       </div>
-  //     </div>
-  //   </div>
-  // </>
+  // MARK: UI: 是非境祸乱
+  const [chaosNodeOpen, setChaosNodeOpen] = createSignal(false);
+  const addChaosNodeRecord = (record: ChaosNodeRecord) => {
+    setStore('chaosNodeRecords', (records) => [...records, record])
+  }
+  const updateChaosNodeRecord = (idx: number, record: ChaosNodeRecord) => {
+    setStore('chaosNodeRecords', idx, record)
+  }
+  const removeChaosNodeRecord = (idx: number) => {
+    setStore('chaosNodeRecords', (records) => records.filter((_, i) => i !== idx))
+  }
+
+  const { score: chaosNodeScore, ui: chaosNodeUI } = createModifierRecordTable({
+    records: () => store.chaosNodeRecords,
+    operationModifierMap: chaosNodeModifierMap,
+    onUpdateRecord: updateChaosNodeRecord,
+    onRemoveRecord: removeChaosNodeRecord,
+  });
+
+  const ChaosNodePart = () => <>
+    <AddDefaultModifierRecordModal
+      open={chaosNodeOpen}
+      onClose={() => setChaosNodeOpen(false)}
+      onAddRecord={addChaosNodeRecord}
+      title="添加是非境祸乱"
+      operationEnum={ChaosNode}
+      operationModifierMap={chaosNodeModifierMap}
+    />
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+      <div class="flex items-center gap-4">
+        <h6 class="text-xl font-semibold">是非境祸乱</h6>
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
+          setChaosNodeOpen(true)
+        }}>
+          添加
+        </button>
+        <div class="flex-grow" />
+        <span>该部分得分: {chaosNodeScore().toFixed(1)}</span>
+      </div>
+      {chaosNodeUI()}
+    </div>
+  </>
+
   // MARK: UI: 领袖作战
   const { score: bossScore, ui: bossUI } = createBossOperationInput(() => store.bossRecords, (bossRecords) => setStore('bossRecords', bossRecords));
 
@@ -900,7 +894,7 @@ export function JingYunCup4() {
     return store.limitedOperators.reduce((sum, operator) => sum + limitedOperatorCostMap[operator], 0);
   }
   const calcLimitedOperatorsSum = () => {
-    return Math.max(0, (calcLimitedOperatorCosts() - 10)) * -200;
+    return Math.max(0, (calcLimitedOperatorCosts() - 10)) * -500;
   }
 
   // MARK: UI: 阵容规则
@@ -913,7 +907,12 @@ export function JingYunCup4() {
         <span>该部分得分: {calcLimitedOperatorsSum()}</span>
       </div>
       <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣200分。</span>
-      {EnumMultiSelectInput(LimitedOperator, () => store.limitedOperators, (v) => setStore("limitedOperators", v), (v) => v)}
+      {EnumMultiSelectInput(
+        LimitedOperator,
+        () => store.limitedOperators,
+        (v) => setStore("limitedOperators", v),
+        (v) => <span>{v}（{limitedOperatorCostMap[v]}）</span>,
+      )}
     </div>
   </>
 
@@ -947,7 +946,7 @@ export function JingYunCup4() {
 
   // MARK: UI: 结算 & 其他
   const SumPart: Component = () => <>
-    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow shrink-0 max-w-60">
+    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow max-w-60 overflow-y-auto">
       <h6 class="text-xl font-semibold pb-2">结算</h6>
       <div class="flex flex-col gap-2 flex-1">
         <div class="flex flex-col gap-1">
@@ -971,7 +970,7 @@ export function JingYunCup4() {
   </>
 
   const calcTotalSum = () => {
-    return emergencyScore() + specialEventScore() + bossScore() +
+    return emergencyScore() + specialEventScore() + chaosNodeScore() + bossScore() +
       calcLimitedOperatorsSum() + collectiblesScore() + withdrawScore() + tmpOperatorScore() + hiddensScore();
   }
 
@@ -1086,16 +1085,15 @@ export function JingYunCup4() {
       <Match when={!sm()}>
         <div class="flex gap-2 h-full box-border p-2">
           <div class="flex flex-col gap-2 flex-1 h-full overflow-y-scroll pr-2">
-            <span>
+            {/* <span>
               单个“常乐”节点最多可获得1次烛火。
               单个“诡异行商”“易与”节点最多刷新4次。
               “昔字如烟”，“往昔难忆”关卡中，不允许在“岁躯”落下前在所在其地块部署任何单位。
-            </span>
+            </span> */}
             <OpeningPart />
             <EmergencyPart />
             <SpecialEventPart />
-            {/* <HiddenPart /> */}
-            {/* <BossPart /> */}
+            <ChaosNodePart />
             {bossUI()}
             <LimitedOperatorsPart />
           </div>
