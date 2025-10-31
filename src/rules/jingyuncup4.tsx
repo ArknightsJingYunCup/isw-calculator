@@ -23,7 +23,7 @@ enum LimitedOperator {
   酒神 = "酒神",
   水月 = "水月",
   玛恩纳 = "玛恩纳",
-  隐德莱希 = "隐德莱希",
+  隐德来希 = "隐德来希",
   逻各斯 = "逻各斯",
   阿斯卡纶 = "阿斯卡纶",
   娜仁图亚 = "娜仁图亚",
@@ -32,7 +32,7 @@ enum LimitedOperator {
   迷迭香 = "迷迭香",
   安洁莉娜 = "安洁莉娜",
   麒麟R夜刀 = "麒麟R夜刀",
-  伊内斯 = "伊内斯",
+  伊内丝 = "伊内丝",
   空弦 = "空弦",
   妮芙 = "妮芙",
 }
@@ -47,7 +47,7 @@ const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.酒神]: 4,
   [LimitedOperator.水月]: 4,
   [LimitedOperator.玛恩纳]: 3,
-  [LimitedOperator.隐德莱希]: 3,
+  [LimitedOperator.隐德来希]: 3,
   [LimitedOperator.逻各斯]: 3,
   [LimitedOperator.阿斯卡纶]: 3,
   [LimitedOperator.娜仁图亚]: 3,
@@ -56,7 +56,7 @@ const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.迷迭香]: 2,
   [LimitedOperator.安洁莉娜]: 1,
   [LimitedOperator.麒麟R夜刀]: 1,
-  [LimitedOperator.伊内斯]: 1,
+  [LimitedOperator.伊内丝]: 1,
   [LimitedOperator.空弦]: 1,
   [LimitedOperator.妮芙]: 1,
 };
@@ -105,6 +105,7 @@ enum EmergencyOperation {
   人镇 = "人镇",
   借力打力 = "借力打力",
   越山海 = "越山海",
+  普通·越山海 = "普通·越山海",
   其他 = "其他",
 }
 const levelEmergencyOperationMap: LevelOperationListMap<typeof Level, typeof EmergencyOperation> = {
@@ -134,6 +135,7 @@ const levelEmergencyOperationMap: LevelOperationListMap<typeof Level, typeof Eme
     EmergencyOperation.炎灼,
     EmergencyOperation.人镇,
     EmergencyOperation.借力打力,
+    EmergencyOperation.普通·越山海，
     EmergencyOperation.越山海,
   ]
 }
@@ -230,8 +232,12 @@ const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOp
     [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 100,
   },
+  [EmergencyOperation.普通·越山海]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore -emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v - 20,
+  },
   [EmergencyOperation.其他]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier。default]: (v: number) => v + emergencyOperationBaseScore,
   },
 }
 
@@ -628,11 +634,11 @@ function createHiddensInput(
         <span>临时招募</span>
         <div class="flex gap-1 max-w-full">
           <div class="flex flex-col gap-1 flex-1 min-w-0">
-            <label class="text-sm text-gray-600">无鸭爵金砖（+10）</label>
+            <label class="text-sm text-gray-600">无鸭爵金币（+10）</label>
             <NumberInput value={normalCnt} setValue={setNormalCnt} />
           </div>
           <div class="flex flex-col gap-1 flex-1 min-w-0">
-            <label class="text-sm text-gray-600">有鸭爵金砖（+30）</label>
+            <label class="text-sm text-gray-600">有鸭爵金币（+30）</label>
             <NumberInput value={withBonusCnt} setValue={setWithBonusCnt} />
           </div>
         </div>
@@ -663,7 +669,7 @@ function createTmpOperatorInput(
   const FOUR_STAR_SCORE = 10;
   const score = () => sixStarCnt() * SIX_STAR_SCORE + fiveStarCnt() * FIVE_STAR_SCORE + fourStarCnt() * FOUR_STAR_SCORE;
   return {
-    score,
+    score，
     ui: () => <>
       <div class="flex flex-col gap-2">
         <span>临时招募</span>
@@ -906,7 +912,7 @@ export function JingYunCup4() {
         <span>阵容消耗: <span class={calcLimitedOperatorCosts() > 10 ? "text-red-600" : "text-green-600"}>{calcLimitedOperatorCosts()} / 10</span></span>
         <span>该部分得分: {calcLimitedOperatorsSum()}</span>
       </div>
-      <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣200分。</span>
+      <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣500分。</span>
       {EnumMultiSelectInput(
         LimitedOperator,
         () => store.limitedOperators,
