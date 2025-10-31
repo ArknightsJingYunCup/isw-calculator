@@ -18,10 +18,15 @@ export function EnumSelectInput<E extends StringEnum>(
         onValueChange={(e) => setSelected(e.items[0])}
       >
         <Select.Control>
-          <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
+          <Select.Trigger class="w-full border rounded px-3 py-2"
+            classList={{
+              "border-gray-300 hover:border-gray-400": selected() !== null,
+              "border-red-400 text-red-400 hover:border-red-500 hover:text-red-500": selected() === null,
+            }}>
             <Select.ValueText placeholder="开局分队" />
           </Select.Trigger>
         </Select.Control>
+        {selected() === null && <span class="text-red-500 text-sm">*未选择开局分队</span>}
         <Portal>
           <Select.Positioner>
             <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto z-20">
@@ -360,7 +365,7 @@ export function createModifierRecordTable<O extends StringEnum, M extends String
                       onValueChange={(e) => {
                         // 始终保留默认 modifier，并按照定义顺序排列其他选中的 modifiers
                         const selectedSet = new Set(e.value as M[keyof M][]);
-                        const orderedModifiers = allModifiers.filter(m => 
+                        const orderedModifiers = allModifiers.filter(m =>
                           m === defaultModifier || selectedSet.has(m)
                         );
                         onUpdateRecord(idx(), {
@@ -391,10 +396,10 @@ export function createModifierRecordTable<O extends StringEnum, M extends String
                     </ToggleGroup.Root>
                   </div>
                 )}
-                
+
                 {/* Extra UI (e.g., for quantity input) */}
                 {extraUI && extraUI(record, idx(), (updatedRecord) => onUpdateRecord(idx(), updatedRecord))}
-                
+
                 <div class="flex-grow" />
 
                 {/* Delete button */}
