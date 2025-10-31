@@ -907,7 +907,7 @@ export function JingYunCup4() {
   // 2. 比赛期间消耗前瞻性投资余额小于 60 的不扣分，若消耗量超过 60 源石锭，每超出 1 点源石锭扣除 50 分
   const { score: withdrawScore, ui: withdrawUI } = createWithdrawInput(
     () => store.withdrawCnt, (v) => setStore("withdrawCnt", v),
-    40, -50
+    40, -60
   );
   // 3. 比赛过程中，选取临时招募干员可获得加分。每个六星干员+50 分，每个五星干员+20分，每个四星干员+10 分。
   const { score: tmpOperatorScore, ui: tmpOperatorUI } = createTmpOperatorInput(
@@ -954,7 +954,9 @@ export function JingYunCup4() {
 
   const calcTotalSum = () => {
     return emergencyScore() + specialEventScore() + chaosNodeScore() + bossScore() +
-      calcLimitedOperatorsSum() + collectiblesScore() + withdrawScore() + tmpOperatorScore() + hiddensScore();
+      calcLimitedOperatorsSum() + collectiblesScore() +
+      withdrawScore() + tmpOperatorScore() + hiddensScore()
+      + factoredScore();
   }
 
   const [copyJsonOpen, setCopyJsonOpen] = createSignal(false);
