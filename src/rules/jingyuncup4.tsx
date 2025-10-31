@@ -93,6 +93,13 @@ enum Level {
   Sixth = "始末陵/明灭顶",
 }
 const levelKeys: (keyof typeof Level)[] = enumKeys(Level);
+// 紧急作战只显示 4、5、6 层
+enum EmergencyLevel {
+  Fourth = "汝吾门",
+  Fifth = "见字祠",
+  Sixth = "始末陵/明灭顶",
+}
+const emergencyLevelKeys: (keyof typeof EmergencyLevel)[] = enumKeys(EmergencyLevel);
 enum EmergencyOperation {
   峥嵘战功 = "峥嵘战功",
   赶场戏班 = "赶场戏班",
@@ -107,34 +114,23 @@ enum EmergencyOperation {
   越山海 = "越山海",
   其他 = "其他",
 }
-const levelEmergencyOperationMap: LevelOperationListMap<typeof Level, typeof EmergencyOperation> = {
-  [Level.First]: [
-    EmergencyOperation.其他,
-  ],
-  [Level.Second]: [
-    EmergencyOperation.其他,
-  ],
-  [Level.Third]: [
-    EmergencyOperation.其他,
-  ],
-  [Level.Fourth]: [
+
+const levelEmergencyOperationMap: LevelOperationListMap<typeof EmergencyLevel, typeof EmergencyOperation> = {
+  [EmergencyLevel.Fourth]: [
     EmergencyOperation.峥嵘战功,
     EmergencyOperation.赶场戏班,
-    EmergencyOperation.其他,
   ],
-  [Level.Fifth]: [
+  [EmergencyLevel.Fifth]: [
     EmergencyOperation.青山不语,
     EmergencyOperation.离域检查,
     EmergencyOperation.薄礼一份,
     EmergencyOperation.邙山镇地方志,
     EmergencyOperation.不成烟火,
-    EmergencyOperation.其他,
   ],
-  [Level.Sixth]: [
+  [EmergencyLevel.Sixth]: [
     EmergencyOperation.炎灼,
     EmergencyOperation.人镇,
     EmergencyOperation.借力打力,
-    EmergencyOperation.越山海,
   ]
 }
 
@@ -709,13 +705,6 @@ export function JingYunCup4() {
     ))
   }
 
-  const calcEmergencySum = () => {
-    return store.emergencyRecords.reduce((sum, record) => {
-      return record.modifiers.reduce((recordSum, modifier) => {
-        return emergencyOperationModifierMap[record.operation][modifier]!(recordSum);
-      }, 0);
-    }, 0);
-  }
   const { score: emergencyScore, ui: emergencyUI } = createModifierRecordTable({
     records: () => store.emergencyRecords,
     operationModifierMap: emergencyOperationModifierMap,
@@ -732,9 +721,13 @@ export function JingYunCup4() {
       operationEnum={EmergencyOperation}
       operationModifierMap={emergencyOperationModifierMap}
       levelOperationMap={{
-        levels: Level,
-        levelKeys: levelKeys,
+        levels: EmergencyLevel,
+        levelKeys: emergencyLevelKeys,
         map: levelEmergencyOperationMap
+      }}
+      extraOperations={{
+        label: "其他",
+        operations: [EmergencyOperation.其他]
       }}
     />
     <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">

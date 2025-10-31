@@ -236,9 +236,13 @@ export function AddDefaultModifierRecordModal<L extends StringEnum, O extends St
     levels: L,
     levelKeys: (keyof L)[],
     map: { [level in L[keyof L]]: O[keyof O][] }
+  },
+  extraOperations?: {
+    label: string,
+    operations: O[keyof O][]
   }
 }) {
-  const { open, onClose, onAddRecord, title, operationEnum, operationModifierMap, levelOperationMap } = props;
+  const { open, onClose, onAddRecord, title, operationEnum, operationModifierMap, levelOperationMap, extraOperations } = props;
 
   // 获取 default modifier key（第一个 modifier 键）
   const getDefaultModifier = (operation: O[keyof O]): M[keyof M] => {
@@ -256,21 +260,42 @@ export function AddDefaultModifierRecordModal<L extends StringEnum, O extends St
   return <>
     <Dialog.Root open={open()} onOpenChange={(details) => !details.open && onClose()}>
       <Portal>
-        <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
-        <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Backdrop class="fixed inset-0 bg-black/50 z-40" />
+        <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4 z-40">
           <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col">
             <Dialog.Title class="text-xl font-semibold mb-2">{title}</Dialog.Title>
             <div class="flex flex-col gap-4 overflow-y-auto">
               {/* 如果提供了 levelOperationMap，按照 level 分组显示 */}
               {levelOperationMap ? (
-                <For each={levelOperationMap.levelKeys}>{(levelKey, idx) => {
-                  const level = levelOperationMap.levels[levelKey];
-                  const operations = levelOperationMap.map[level];
-                  return <>
+                <>
+                  <For each={levelOperationMap.levelKeys}>{(levelKey, idx) => {
+                    const level = levelOperationMap.levels[levelKey];
+                    const operations = levelOperationMap.map[level];
+                    return <>
+                      <div class="flex flex-col gap-2">
+                        <span class="font-medium">第 {idx() + 1} 层：{level}</span>
+                        <div class="flex flex-wrap gap-2">
+                          <For each={operations}>{(operation) => <>
+                            <button
+                              class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                              onClick={() => {
+                                onAddRecord(createRecord(operation as O[keyof O]));
+                                onClose();
+                              }}
+                            >
+                              {operation}
+                            </button>
+                          </>}</For>
+                        </div>
+                      </div>
+                    </>
+                  }}</For>
+                  {/* 如果提供了 extraOperations，显示额外操作 */}
+                  {extraOperations && (
                     <div class="flex flex-col gap-2">
-                      <span class="font-medium">第 {idx() + 1} 层：{level}</span>
+                      <span class="font-medium">{extraOperations.label}</span>
                       <div class="flex flex-wrap gap-2">
-                        <For each={operations}>{(operation) => <>
+                        <For each={extraOperations.operations}>{(operation) => <>
                           <button
                             class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
                             onClick={() => {
@@ -283,8 +308,8 @@ export function AddDefaultModifierRecordModal<L extends StringEnum, O extends St
                         </>}</For>
                       </div>
                     </div>
-                  </>
-                }}</For>
+                  )}
+                </>
               ) : (
                 /* 如果没有提供 levelOperationMap，直接显示所有 operations */
                 <div class="flex flex-wrap gap-2">
