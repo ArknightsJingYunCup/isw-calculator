@@ -6,9 +6,7 @@ import { Portal } from "solid-js/web";
 import { createStore, produce } from "solid-js/store";
 import { enumKeys, enumValues, readJson, saveJson, StringEnum } from "../lib/utils";
 import { createMediaQuery } from "@solid-primitives/media";
-import { createCollectibleInput, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, NumberInput } from "../components";
-import { ToggleGroup } from "@ark-ui/solid/toggle-group";
-import { Toggle } from "@ark-ui/solid/toggle";
+import { AddDefaultModifierRecordModal, createCollectibleInput, createModifierRecordTable, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, FullOperationModifierMap, LevelModifierRecord, LevelOperationListMap, ModifierRecord, ModifierSelector, NumberInput, OperationModifierMap } from "../components";
 
 function levelNum(level: Level): number {
   return enumValues(Level).indexOf(level) + 1;
@@ -109,7 +107,7 @@ enum EmergencyOperation {
   越山海 = "越山海",
   其他 = "其他",
 }
-const levelEmergencyOperationMap: { [key in Level]: EmergencyOperation[] } = {
+const levelEmergencyOperationMap: LevelOperationListMap<typeof Level, typeof EmergencyOperation> = {
   [Level.First]: [
     EmergencyOperation.其他,
   ],
@@ -158,7 +156,7 @@ enum BonusBossOperation {
   // 6
   末狩 = "末狩",
 }
-const levelBossOperationMap: { [key in BossLevel]: BonusBossOperation[] } = {
+const levelBossOperationListMap: LevelOperationListMap<typeof BossLevel, typeof BonusBossOperation> = {
   [Level.Third]: [
     BonusBossOperation.夕娥忆,
     BonusBossOperation.仁义武,
@@ -179,25 +177,64 @@ const levelBossOperationMap: { [key in BossLevel]: BonusBossOperation[] } = {
 const emergencyOperationBaseScore = 20;
 // 无漏通过以下紧急关时，获得对应分数
 // 无漏定义为：关卡内未损失目标生命值，且摧毁所有雕伥。非无漏时，紧急作战加分降为原有的50%
-const emergencyOperationBonus: { [key in EmergencyOperation]: number } = {
-  [EmergencyOperation.峥嵘战功]: 40,
-  [EmergencyOperation.赶场戏班]: 40,
-  [EmergencyOperation.青山不语]: 60,
-  [EmergencyOperation.离域检查]: 40,
-  [EmergencyOperation.薄礼一份]: 40,
-  [EmergencyOperation.邙山镇地方志]: 60,
-  [EmergencyOperation.不成烟火]: 50,
-  [EmergencyOperation.炎灼]: 60,
-  [EmergencyOperation.人镇]: 60,
-  [EmergencyOperation.借力打力]: 70,
-  [EmergencyOperation.越山海]: 100,
-  [EmergencyOperation.其他]: 0,
+
+enum EmergencyOperationModifier {
+  default = "",
+  perfect = "无漏",
 }
-const emergencyOperationKeys: (keyof typeof EmergencyOperation)[] = enumKeys(EmergencyOperation);
-type EmergencyOperationRecord = {
-  operation: EmergencyOperation,
-  perfect: boolean,
+
+// 使用 Modifier 系统定义紧急作战的加分规则
+const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOperation, typeof EmergencyOperationModifier> = {
+  [EmergencyOperation.峥嵘战功]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
+  },
+  [EmergencyOperation.赶场戏班]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
+  },
+  [EmergencyOperation.青山不语]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
+  },
+  [EmergencyOperation.离域检查]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
+  },
+  [EmergencyOperation.薄礼一份]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
+  },
+  [EmergencyOperation.邙山镇地方志]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
+  },
+  [EmergencyOperation.不成烟火]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 50,
+  },
+  [EmergencyOperation.炎灼]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
+  },
+  [EmergencyOperation.人镇]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
+  },
+  [EmergencyOperation.借力打力]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 70,
+  },
+  [EmergencyOperation.越山海]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 100,
+  },
+  [EmergencyOperation.其他]: {
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+  },
 }
+
+type EmergencyOperationRecord = ModifierRecord<typeof EmergencyOperation, typeof EmergencyOperationModifier>;
 
 // MARK: Store
 type TmpOperatorsCnt = {
@@ -211,16 +248,7 @@ type HiddensCnt = {
   withBonus: number,
 }
 
-type BossOperationRecordMap = {
-  [operation in BonusBossOperation]?: OperationModifier[]
-}
-type BossRecords = {
-  [level in BossLevel]: {
-    operation: BonusBossOperation,
-    modifiers: OperationModifier[],
-  } | null
-}
-
+type BossRecords = LevelModifierRecord<typeof BossLevel, typeof BonusBossOperation, typeof OperationModifier>;
 type Store = {
   squad: Squad | null,
   limitedOperators: LimitedOperator[],
@@ -248,11 +276,11 @@ const testStoreValue: Store = {
   emergencyRecords: [
     {
       operation: EmergencyOperation.峥嵘战功,
-      perfect: true,
+      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
     },
     {
       operation: EmergencyOperation.峥嵘战功,
-      perfect: false,
+      modifiers: [EmergencyOperationModifier.default],
     }
   ],
   bossRecords: {
@@ -303,13 +331,7 @@ const defaultStoreValue: Store = {
   score: 0,
 };
 
-type ModifierMap = {
-  [modifier in OperationModifier]?: (v: number) => number
-}
-type OperationModifierMap = {
-  [operation in BonusBossOperation]: ModifierMap
-}
-const operationModiferMap: OperationModifierMap = {
+const operationModiferMap: OperationModifierMap<typeof BonusBossOperation, typeof OperationModifier> = {
   // 3
   [BonusBossOperation.夕娥忆]: {
     [OperationModifier.perfect]: (v: number) => v + 30,
@@ -343,70 +365,6 @@ const operationModiferMap: OperationModifierMap = {
   },
 }
 
-// T: Operation, M: Modifier
-type ModifierRecord<T extends StringEnum, M extends StringEnum> = {
-  operation: T,
-  modifiers: M[],
-}
-type ModifierEffectMap<M extends StringEnum> = {
-  [key in M[keyof M]]: (v: number) => number
-}
-type OperationModifierEffectMap<T extends StringEnum, M extends StringEnum> = {
-  [key in T[keyof T]]: ModifierEffectMap<M>
-}
-
-const ModifierSelector = <T extends StringEnum, M extends StringEnum>(
-  entry: T[keyof T],
-  operationModifierMap: OperationModifierEffectMap<T, M>,
-  modifiers: Accessor<M[keyof M][]>,
-  onUpdateModifiers: (modifiers: M[keyof M][]) => void,
-) => {
-  const modifierMap: ModifierMap = operationModifierMap[entry];
-  const allModifiers = Object.keys(modifierMap).map((key) => key as M[keyof M]);
-
-  const mainLabel =
-    `${entry}${allModifiers[0].length > 0 ? `（${allModifiers[0]}）` : ""}`;
-
-  return <>
-    <div class="flex border border-gray-300 rounded overflow-hidden">
-      <ToggleGroup.Root
-        multiple
-        value={modifiers()}
-        onValueChange={(e) => {
-          if (!e.value.includes(allModifiers[0])) {
-            onUpdateModifiers([]);
-          } else {
-            onUpdateModifiers(e.value as M[keyof M][]);
-          }
-        }}
-        class="flex"
-      >
-        <For each={allModifiers}>{(modifier, idx) => {
-          const isSelected = () => modifiers().includes(modifier);
-          const isLast = () => idx() === allModifiers.length - 1;
-          const disabled = () => modifiers().length === 0 && idx() !== 0;
-          return <ToggleGroup.Item
-            value={modifier}
-            class="px-3 py-1 transition-colors cursor-pointer"
-            classList={{
-              "text-white": isSelected(),
-              "text-sm": idx() !== 0,
-              "bg-blue-500 ": isSelected() && idx() === 0,
-              "bg-green-500": isSelected() && idx() !== 0,
-              "text-gray-700 hover:bg-gray-50": !isSelected(),
-              "opacity-50 cursor-not-allowed": disabled(),
-              "border-r border-gray-300": !isLast(),
-            }}
-            disabled={disabled()}
-          >
-            {idx() === 0 ? mainLabel : modifier}
-          </ToggleGroup.Item>
-        }}</For>
-      </ToggleGroup.Root>
-    </div>
-  </>;
-}
-
 // MARK: createBossOperationInput
 function createBossOperationInput(
   bossRecords: Accessor<BossRecords>, setBossRecords: Setter<BossRecords>
@@ -415,7 +373,6 @@ function createBossOperationInput(
   ui: () => JSX.Element,
 } {
   const levelScore = () => {
-    console.log(bossRecords())
     return enumValues(BossLevel).map((x) =>
       bossRecords()[x] == null ? 0 : bossRecords()[x]!.modifiers.reduce(
         (sum, modifier) => operationModiferMap[bossRecords()[x]!.operation]![modifier]!(sum), 0)
@@ -432,7 +389,7 @@ function createBossOperationInput(
           <span>该部分得分: {score().toFixed(1)}</span>
         </div>
         <For each={enumValues(BossLevel)}>{(level, idx) => {
-          const operations = levelBossOperationMap[level];
+          const operations = levelBossOperationListMap[level];
           return <>
             <div class="flex gap-2 items-baseline">
               <span class="font-medium">第 {levelNum(level as unknown as Level)} 层：{level}</span>
@@ -556,169 +513,12 @@ export function JingYunCup4() {
   // const [store, setStore] = createStore<Store>({ ...defaultStoreValue });
   const [store, setStore] = createStore<Store>({ ...testStoreValue });
 
-  // const calcEmergencyRecordScore = (idx: number) => {
-  //   const record = store.emergencyRecords[idx];
-  //   const info = EmergencyOperationInfos[record.operation];
-  //   const score = info.score * (record.perfect ? 1.2 : 1) * (
-  //     record.refresh ? (
-  //       store.collectible == Collectible.HatredInTheEraOfDeathFeud ? 0.1 : 0.3
-  //     ) : 1
-  //   );
-  //   return score;
-  // }
-
-
-  // const calcHiddenRecordScore = (idx: number) => {
-  //   const record = store.hiddenRecords[idx];
-  //   const info = HiddenOperationInfos[record.operation];
-  //   const score = (record.emergency ? info.emergency_score : info.score) * (record.perfect ? 1 : 0.5);
-  //   return score;
-  // }
-
-  // const calcBossRecordScore = (idx: number) => {
-  //   const record = store.bossRecords[idx];
-  //   const info = BossOperationInfos[record.operation];
-  //   const score = record.chaos ? info.chaos_score : info.score;
-  //   return score;
-  // }
-
-  // const calcEmergencySum = () => {
-  //   const emergencySum = store.emergencyRecords.reduce((sum, _, idx) => sum + calcEmergencyRecordScore(idx), 0);
-  //   return emergencySum;
-  // }
-
-  // const calcHiddenSum = () => {
-  //   const hiddenSum = store.hiddenRecords.reduce((sum, _, idx) => sum + calcHiddenRecordScore(idx), 0);
-  //   return hiddenSum;
-  // }
-
-  // const calcBossSum = () => {
-  //   const sum = store.bossRecords.reduce((sum, _, idx) => sum + calcBossRecordScore(idx), 0);
-  //   return sum;
-  // }
-
-  // const toggleBannedOperator = (operator: BannedOperator) => {
-  //   setStore("bannedOperatorRecords", (operators) => operators.map((item) => {
-  //     return item.operator != operator ? item : { ...item, banned: !item.banned }
-  //   }));
-  // }
-
-  // const calcBannedSum = () => {
-  //   return store.bannedOperatorRecords.reduce((sum, record) => sum + (record.banned ? BannedOperatorInfos[record.operator] : 0), 0);
-  // }
-
-  // const toggleKingsCollectible = (collectible: KingsCollectible) => {
-  //   setStore("kingsCollectibleRecords", (collectibles) => collectibles.map((item) => {
-  //     return item.collectible != collectible ? item : { ...item, owned: !item.owned }
-  //   }));
-  // }
-
-  // // 3) e) 结算时，若持有超过1件“国王”藏品，从第二件藏品开始每持有一件藏品扣除20分；触
-  // //       发“诸王的冠冕”3层效果时，额外扣除40分；若集齐游戏内所有“国王”藏品，额外扣除
-  // //       20分；
-  // // 正赛：更改为 结算时，若持有超过1件“国王”藏品，从第二件藏品开始每持有一件藏品扣除20分；在“失落财宝”中选择《泰拉之王》时，额外扣除40分；若集齐游戏内所有“国王”藏品，额外扣除
-  // //       20分；
-  // //
-  // const calcKingsCollectibleSum = () => {
-  //   const kingsCollectibleCnt = store.kingsCollectibleRecords.reduce((sum, record) => sum + (record.owned ? 1 : 0), 0);
-  //   // const ownedCrown = store.kingsCollectibleRecords.find((record) => record.collectible == KingsCollectible.KingsCrown && record.owned);
-  //   let score = 0;
-  //   if (kingsCollectibleCnt > 1) {
-  //     score = (kingsCollectibleCnt - 1) * -20;
-  //   }
-  //   if (store.kingOfTerra) {
-  //     score -= 40;
-  //   }
-  //   if (kingsCollectibleCnt == 4) {
-  //     score -= 20;
-  //   }
-  //   return score
-  // }
-
-  // const collectibleScore = () => store.collectible == Collectible.DoodleInTheEraOfHope ? 3 : 0;
-  // const calcCollectionsScore = () => {
-  //   return store.collectionsCnt * collectibleScore();
-  // }
-
-  // const calcHiddenScore = () => {
-  //   return store.killedHiddenCnt * 10;
-  // }
-
-  // const maxRefreshCnt = () => store.squad == Squad.BlueprintSurveyingSquad ? 15 : 8;
-  // const calcRefreshScore = () => {
-  //   return store.refreshCnt > maxRefreshCnt() ? (store.refreshCnt - maxRefreshCnt()) * -50 : 0;
-  // }
-
-  // const calcWithdrawScore = () => {
-  //   return store.withdrawCnt > 40 ? (store.withdrawCnt - 40) * -50 : 0;
-  // }
-
-  // const calcScore = () => {
-  //   return store.score * 0.5
-  // }
-
-  // const calcTotalSum = () => {
-  //   return calcScore()
-  //     + calcEmergencySum() + calcHiddenSum() + calcBossSum()
-  //     + calcCollectionsScore() + calcHiddenScore() + calcRefreshScore() + calcWithdrawScore()
-  //     + calcBannedSum() + calcKingsCollectibleSum();
-  // }
-
   // MARK: UI: 开局设置
   const OpeningPart: Component = () => <>
     <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 z-20">
       <h6 class="text-xl font-semibold">开局设置</h6>
       <div class="flex gap-4 flex-wrap justify-stretch">
         {EnumSelectInput(Squad, () => store.squad, (v) => setStore("squad", v))}
-        {/* <div class="min-w-[150px] flex-grow">
-          <Select.Root
-            value={store.squad || ''}
-            onChange={(value) => setStore("squad", value as Squad)}
-            options={Object.values(Squad)}
-            placeholder="开局分队"
-            itemComponent={(props) => (
-              <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
-                <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
-              </Select.Item>
-            )}
-          >
-            <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
-              <Select.Value<string>>
-                {(state) => state.selectedOption() || "开局分队"}
-              </Select.Value>
-            </Select.Trigger>
-            <Select.Portal>
-              <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
-                <Select.Listbox />
-              </Select.Content>
-            </Select.Portal>
-          </Select.Root>
-        </div> */}
-
-        {/* <div class="min-w-[150px] flex-grow">
-          <Select.Root
-            value={store.collectible || ''}
-            onChange={(value) => setStore("collectible", value as Collectible)}
-            options={Object.values(Collectible)}
-            placeholder="开局藏品"
-            itemComponent={(props) => (
-              <Select.Item item={props.item} class="px-3 py-2 hover:bg-gray-100 cursor-pointer">
-                <Select.ItemLabel>{props.item.rawValue}</Select.ItemLabel>
-              </Select.Item>
-            )}
-          >
-            <Select.Trigger class="w-full border border-gray-300 rounded px-3 py-2 hover:border-gray-400 focus:border-blue-500 focus:outline-none">
-              <Select.Value<string>>
-                {(state) => state.selectedOption() || "开局藏品"}
-              </Select.Value>
-            </Select.Trigger>
-            <Select.Portal>
-              <Select.Content class="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
-                <Select.Listbox />
-              </Select.Content>
-            </Select.Portal>
-          </Select.Root>
-        </div> */}
       </div>
     </div>
   </>
@@ -737,67 +537,34 @@ export function JingYunCup4() {
     ))
   }
 
-  const AddEmergencyRecordModal: Component<{
-    open: Accessor<boolean>,
-    onClose: () => void,
-    onAddRecord: (operation: EmergencyOperationRecord) => void
-  }> = ({ open, onClose, onAddRecord }) => {
-    return <>
-      <Dialog.Root open={open()} onOpenChange={(details) => !details.open && onClose()}>
-        <Portal>
-          <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
-          <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col">
-              <Dialog.Title class="text-xl font-semibold mb-2">添加紧急作战</Dialog.Title>
-              <div class="flex flex-col gap-4 overflow-y-auto">
-                <For each={levelKeys}>{(levelKey, idx) => {
-                  const level = Level[levelKey];
-                  return <>
-                    <div class="flex flex-col gap-2">
-                      <span class="font-medium">第 {idx() + 1} 层：{level}</span>
-                      <div class="flex flex-wrap gap-2">
-                        <For each={levelEmergencyOperationMap[level]}>{(operation) => <>
-                          <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
-                            classList={{
-                              "border-dashed": operation == EmergencyOperation.其他,
-                            }} onClick={() => {
-                              onAddRecord({
-                                operation,
-                                perfect: false,
-                              } as EmergencyOperationRecord);
-                              onClose();
-                            }}>{operation}</button>
-                        </>}</For>
-                      </div>
-                    </div>
-                  </>
-                }}</For>
-              </div>
-              <div class="flex gap-4 justify-end mt-4">
-                <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseTrigger>
-              </div>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
-    </>
-  }
-
   const calcEmergencySum = () => {
-    return emergencyOperationBaseScore * store.emergencyRecords.length // 每通过一个紧急作战，加 20 分
-      + calcEmergencyRecordBonusList().reduce((sum, bonus) => sum + bonus, 0);
+    return store.emergencyRecords.reduce((sum, record) => {
+      return record.modifiers.reduce((recordSum, modifier) => {
+        return emergencyOperationModifierMap[record.operation][modifier]!(recordSum);
+      }, 0);
+    }, 0);
   }
-  const calcEmergencyRecordBonusList = () => {
-    return store.emergencyRecords.map((record) => {
-      const bonus = emergencyOperationBonus[record.operation];
-      // 无漏通过以下紧急关卡时，获得对应分数。非无漏时，紧急作战加分降为原有的 50%。
-      return record.perfect ? bonus : bonus * 0.5;
-    });
-  }
+  const { score: emergencyScore, ui: emergencyUI } = createModifierRecordTable({
+    records: () => store.emergencyRecords,
+    operationModifierMap: emergencyOperationModifierMap,
+    onUpdateRecord: updateEmergencyRecord,
+    onRemoveRecord: removeEmergencyRecord,
+  });
+
   const EmergencyPart = () => <>
-    <AddEmergencyRecordModal open={emergencyOpen} onClose={() => {
-      setEmergencyOpen(false);
-    }} onAddRecord={addEmergencyRecord} />
+    <AddDefaultModifierRecordModal
+      open={emergencyOpen}
+      onClose={() => setEmergencyOpen(false)}
+      onAddRecord={addEmergencyRecord}
+      title="添加紧急作战"
+      operationEnum={EmergencyOperation}
+      operationModifierMap={emergencyOperationModifierMap}
+      levelOperationMap={{
+        levels: Level,
+        levelKeys: levelKeys,
+        map: levelEmergencyOperationMap
+      }}
+    />
     <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
       <div class="flex items-center gap-4">
         <h6 class="text-xl font-semibold">紧急作战</h6>
@@ -807,56 +574,9 @@ export function JingYunCup4() {
           添加
         </button>
         <div class="flex-grow" />
-        <span>该部分得分: {calcEmergencySum().toFixed(1)}</span>
+        <span>该部分得分: {emergencyScore().toFixed(1)}</span>
       </div>
-      <div class="flex justify-stretch gap-2">
-        <div class="flex-1 overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b">
-                <th class="min-w-[60px] text-left p-2">名称</th>
-                <th class="text-left p-2">无漏</th>
-                <th class="text-right p-2">分数</th>
-                <th class="text-center p-2">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <For each={store.emergencyRecords}>
-                {(record, idx) => {
-                  const bonus = calcEmergencyRecordBonusList()[idx()];
-                  return <>
-                    <tr class="border-b last:border-0">
-                      <td class="p-2">{record.operation}</td>
-                      <td class="p-2">
-                        <Checkbox.Root
-                          checked={record.perfect}
-                          onCheckedChange={(details) => {
-                            updateEmergencyRecord(idx(), { ...record, perfect: !!details.checked });
-                          }}
-                          class="inline-flex items-center"
-                        >
-                          <Checkbox.Control class="w-5 h-5 border-1 border-gray-400 rounded flex items-center justify-center data-[state='checked']:bg-[#2C7FFF] text-white">
-                            <Checkbox.Indicator>
-                              <div class="i-mdi-check text-md"></div>
-                            </Checkbox.Indicator>
-                          </Checkbox.Control>
-                          <Checkbox.HiddenInput />
-                        </Checkbox.Root>
-                      </td>
-                      <td class="text-right p-2">20 + <span class={record.perfect ? "" : "text-red-500"}>{bonus.toFixed(1)}</span> = {(20 + bonus).toFixed(1)}</td>
-                      <td class="text-center p-2">
-                        <button class="text-red-500 hover:text-red-700 p-1" onClick={() => { removeEmergencyRecord(idx()) }} aria-label="删除">
-                          <div class="i-mdi-delete text-xl" />
-                        </button>
-                      </td>
-                    </tr>
-                  </>
-                }}
-              </For>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {emergencyUI()}
     </div>
   </>
 
@@ -1023,8 +743,8 @@ export function JingYunCup4() {
   </>
 
   const calcTotalSum = () => {
-    return calcEmergencySum() + bossScore() +
-      calcLimitedOperatorsSum() + collectiblesScore() + withdrawScore() + tmpOperatorScore();
+    return emergencyScore() + bossScore() +
+      calcLimitedOperatorsSum() + collectiblesScore() + withdrawScore() + tmpOperatorScore() + hiddensScore();
   }
 
   const [copyJsonOpen, setCopyJsonOpen] = createSignal(false);

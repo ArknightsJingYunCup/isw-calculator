@@ -1,6 +1,8 @@
 import { Accessor, Component, createSignal, For, Index, JSX, Setter } from "solid-js";
 import { enumKeys, EnumLike, enumValues, StringEnum } from "../lib/utils";
-import { createListCollection, Select } from "@ark-ui/solid";
+import { createListCollection, Select, ToggleGroup } from "@ark-ui/solid";
+import { Dialog } from "@ark-ui/solid/dialog";
+import { Checkbox } from "@ark-ui/solid/checkbox";
 import { Portal } from "solid-js/web";
 
 export function EnumSelectInput<E extends StringEnum>(
@@ -135,5 +137,261 @@ export function createWithdrawInput(withdraw: Accessor<number>, setWithdraw: Set
         </span>
       </div>
     </>,
+  }
+}
+
+
+export type ModifierRecord<O extends StringEnum, M extends StringEnum> = {
+  operation: O[keyof O],
+  modifiers: M[keyof M][],
+}
+export type LevelModifierRecord<L extends StringEnum, O extends StringEnum, M extends StringEnum> = {
+  [level in L[keyof L]]: ModifierRecord<O, M> | null
+}
+export type LevelOperationListMap<L extends StringEnum, O extends StringEnum> = {
+  [level in L[keyof L]]: O[keyof O][]
+}
+
+// O: Operation, M: Modifier
+export type OperationModifierMap<O extends StringEnum, M extends StringEnum> = {
+  [operation in O[keyof O]]?: ModifierMap<M>
+}
+export type FullOperationModifierMap<O extends StringEnum, M extends StringEnum> = {
+  [operation in O[keyof O]]: ModifierMap<M>
+}
+export type ModifierMap<M extends StringEnum> = {
+  [key in M[keyof M]]?: (v: number) => number
+}
+
+export function ModifierSelector<O extends StringEnum, M extends StringEnum>(
+  entry: O[keyof O],
+  operationModifierMap: FullOperationModifierMap<O, M>,
+  modifiers: Accessor<M[keyof M][]>,
+  onUpdateModifiers: (modifiers: M[keyof M][]) => void,
+) {
+  const modifierMap: ModifierMap<M> = operationModifierMap[entry];
+  const allModifiers = Object.keys(modifierMap).map((key) => key as M[keyof M]);
+
+  const mainLabel =
+    `${entry}${allModifiers[0].length > 0 ? `（${allModifiers[0]}）` : ""}`;
+
+  return <>
+    <div class="flex border border-gray-300 rounded overflow-hidden">
+      <ToggleGroup.Root
+        multiple
+        value={modifiers()}
+        onValueChange={(e) => {
+          if (!e.value.includes(allModifiers[0])) {
+            onUpdateModifiers([]);
+          } else {
+            onUpdateModifiers(e.value as M[keyof M][]);
+          }
+        }}
+        class="flex"
+      >
+        <For each={allModifiers}>{(modifier, idx) => {
+          const isSelected = () => modifiers().includes(modifier);
+          const isLast = () => idx() === allModifiers.length - 1;
+          const disabled = () => modifiers().length === 0 && idx() !== 0;
+          return <ToggleGroup.Item
+            value={modifier}
+            class="px-3 py-1 transition-colors cursor-pointer"
+            classList={{
+              "text-white": isSelected(),
+              "text-sm": idx() !== 0,
+              "bg-blue-500 ": isSelected() && idx() === 0,
+              "bg-green-500": isSelected() && idx() !== 0,
+              "text-gray-700 hover:bg-gray-50": !isSelected(),
+              "opacity-50 cursor-not-allowed": disabled(),
+              "border-r border-gray-300": !isLast(),
+            }}
+            disabled={disabled()}
+          >
+            {idx() === 0 ? mainLabel : modifier}
+          </ToggleGroup.Item>
+        }}</For>
+      </ToggleGroup.Root>
+    </div>
+  </>;
+}
+
+
+
+export function AddDefaultModifierRecordModal<L extends StringEnum, O extends StringEnum, M extends StringEnum>(props: {
+  open: Accessor<boolean>,
+  onClose: () => void,
+  onAddRecord: (record: ModifierRecord<O, M>) => void,
+  title: string,
+  operationEnum: O,
+  operationModifierMap: FullOperationModifierMap<O, M>,
+  levelOperationMap?: {
+    levels: L,
+    levelKeys: (keyof L)[],
+    map: { [level in L[keyof L]]: O[keyof O][] }
+  }
+}) {
+  const { open, onClose, onAddRecord, title, operationEnum, operationModifierMap, levelOperationMap } = props;
+
+  // 获取 default modifier key（第一个 modifier 键）
+  const getDefaultModifier = (operation: O[keyof O]): M[keyof M] => {
+    const modifiers = Object.keys(operationModifierMap[operation]) as M[keyof M][];
+    return modifiers[0];
+  };
+
+  const createRecord = (operation: O[keyof O]): ModifierRecord<O, M> => {
+    return {
+      operation,
+      modifiers: [getDefaultModifier(operation)]
+    };
+  };
+
+  return <>
+    <Dialog.Root open={open()} onOpenChange={(details) => !details.open && onClose()}>
+      <Portal>
+        <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
+        <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col">
+            <Dialog.Title class="text-xl font-semibold mb-2">{title}</Dialog.Title>
+            <div class="flex flex-col gap-4 overflow-y-auto">
+              {/* 如果提供了 levelOperationMap，按照 level 分组显示 */}
+              {levelOperationMap ? (
+                <For each={levelOperationMap.levelKeys}>{(levelKey, idx) => {
+                  const level = levelOperationMap.levels[levelKey];
+                  const operations = levelOperationMap.map[level];
+                  return <>
+                    <div class="flex flex-col gap-2">
+                      <span class="font-medium">第 {idx() + 1} 层：{level}</span>
+                      <div class="flex flex-wrap gap-2">
+                        <For each={operations}>{(operation) => <>
+                          <button
+                            class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                            onClick={() => {
+                              onAddRecord(createRecord(operation as O[keyof O]));
+                              onClose();
+                            }}
+                          >
+                            {operation}
+                          </button>
+                        </>}</For>
+                      </div>
+                    </div>
+                  </>
+                }}</For>
+              ) : (
+                /* 如果没有提供 levelOperationMap，直接显示所有 operations */
+                <div class="flex flex-wrap gap-2">
+                  <For each={enumValues(operationEnum)}>{(operation) => <>
+                    <button
+                      class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                      onClick={() => {
+                        onAddRecord(createRecord(operation as O[keyof O]));
+                        onClose();
+                      }}
+                    >
+                      {operation}
+                    </button>
+                  </>}</For>
+                </div>
+              )}
+            </div>
+            <div class="flex gap-4 justify-end mt-4">
+              <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseTrigger>
+            </div>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog.Root>
+  </>
+}
+
+export function createModifierRecordTable<O extends StringEnum, M extends StringEnum>(props: {
+  records: Accessor<ModifierRecord<O, M>[]>,
+  operationModifierMap: FullOperationModifierMap<O, M>,
+  onUpdateRecord: (index: number, record: ModifierRecord<O, M>) => void,
+  onRemoveRecord: (index: number) => void,
+}): {
+  score: Accessor<number>,
+  ui: () => JSX.Element,
+} {
+  const { records, operationModifierMap, onUpdateRecord, onRemoveRecord } = props;
+
+  const recordsScore = () => records().map((record) => record.modifiers.reduce((sum, modifier) => {
+    const modifierMap = operationModifierMap[record.operation];
+    return modifierMap[modifier]!(sum);
+  }, 0))
+  const score = () => recordsScore().reduce((sum, x) => sum + x, 0);
+
+  return {
+    score,
+    ui: () => <>
+      <div class="flex flex-col gap-2">
+        <For each={records()}>
+          {(record, idx) => {
+            const modifierMap = operationModifierMap[record.operation];
+            const allModifiers = Object.keys(modifierMap) as M[keyof M][];
+            const defaultModifier = allModifiers[0];
+            const nonDefaultModifiers = allModifiers.slice(1);
+
+            return (
+              <div class="flex gap-2 items-center">
+                <div class="flex gap-2 items-center">
+                  {/* <span class="text-gray-500 text-medium">[{idx()}]</span> */}
+                  <span>+{recordsScore()[idx()].toFixed(1)}</span>
+                  {/* Label for operation */}
+                  <span class="font-medium whitespace-nowrap">{record.operation}</span>
+                </div>
+
+                {/* ToggleGroup for non-default modifiers */}
+                {nonDefaultModifiers.length > 0 && (
+                  <div class="flex border border-gray-300 rounded overflow-hidden">
+                    <ToggleGroup.Root
+                      multiple
+                      value={record.modifiers.filter(m => m !== defaultModifier)}
+                      onValueChange={(e) => {
+                        // 始终保留默认 modifier，加上选中的其他 modifiers
+                        onUpdateRecord(idx(), {
+                          ...record,
+                          modifiers: [defaultModifier, ...(e.value as M[keyof M][])]
+                        });
+                      }}
+                      class="flex flex-grow"
+                    >
+                      <For each={nonDefaultModifiers}>{(modifier, idx) => {
+                        const isSelected = () => record.modifiers.includes(modifier);
+                        const isLast = () => idx() === nonDefaultModifiers.length - 1;
+
+                        return (
+                          <ToggleGroup.Item
+                            value={modifier}
+                            class="px-3 py-1 transition-colors cursor-pointer flex-grow text-sm"
+                            classList={{
+                              "text-white bg-green-500": isSelected(),
+                              "text-gray-700 hover:bg-gray-50": !isSelected(),
+                              "border-r border-gray-300": !isLast(),
+                            }}
+                          >
+                            {modifier}
+                          </ToggleGroup.Item>
+                        );
+                      }}</For>
+                    </ToggleGroup.Root>
+                  </div>
+                )}
+                <div class="flex-grow" />
+
+                {/* Delete button */}
+                <button
+                  class="text-red-500 hover:text-red-700 p-2 border border-gray-300 rounded hover:bg-red-50 shrink-0"
+                  onClick={() => onRemoveRecord(idx())}
+                  aria-label="删除"
+                >
+                  <div class="i-mdi-delete text-xl" />
+                </button>
+              </div>
+            );
+          }}
+        </For>
+      </div>
+    </>
   }
 }
