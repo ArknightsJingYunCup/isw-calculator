@@ -233,7 +233,7 @@ const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOp
     [EmergencyOperationModifier.perfect]: (v: number) => v + 100,
   },
   [EmergencyOperation.普通·越山海]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore -emergencyOperationBaseScore,
+    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore - emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v - 20,
   },
   [EmergencyOperation.其他]: {
@@ -424,6 +424,10 @@ const testStoreValue: Store = {
     },
     {
       operation: EmergencyOperation.越山海,
+      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
+    }
+    {
+      operation: EmergencyOperation.普通·越山海,
       modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
     }
   ],
