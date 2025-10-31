@@ -425,7 +425,7 @@ const testStoreValue: Store = {
     {
       operation: EmergencyOperation.越山海,
       modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
-    }
+    },
     {
       operation: EmergencyOperation.普通·越山海,
       modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
