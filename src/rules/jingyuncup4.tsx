@@ -896,7 +896,7 @@ export function JingYunCup4() {
         <span>阵容消耗: <span class={calcLimitedOperatorCosts() > 10 ? "text-red-600" : "text-green-600"}>{calcLimitedOperatorCosts()} / 10</span></span>
         <span>该部分得分: {calcLimitedOperatorsSum()}</span>
       </div>
-      <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣200分。</span>
+      <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣500分。</span>
       {EnumMultiSelectInput(
         LimitedOperator,
         () => store.limitedOperators,
