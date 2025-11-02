@@ -31,6 +31,8 @@ jobs:
 
       - name: 🔨 Build Site
         run: bun run build
+        env:
+          BASE_URL: /isw-calculator/
 
       - name: ⏫ Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
