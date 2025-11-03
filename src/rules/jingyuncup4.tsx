@@ -1010,7 +1010,25 @@ export function JingYunCup4() {
           </span>
         </div>
         <div class="flex gap-2 flex-shrink-0">
-          <button class="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium sm:px-3 sm:py-2" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
+          <button class="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium sm:px-3 sm:py-2" onClick={() => { 
+            setStore(produce((draft) => {
+              draft.squad = defaultStoreValue.squad;
+              draft.limitedOperators = [];
+              draft.emergencyRecords = [];
+              draft.specialEventRecords = [];
+              draft.chaosNodeRecords = [];
+              draft.bossRecords = {
+                [Level.Third]: null,
+                [Level.Fifth]: null,
+                [Level.Sixth]: null,
+              };
+              draft.withdrawCnt = 0;
+              draft.collectiblesCnt = 0;
+              draft.tmpOperatorsCnt = { sixStar: 0, fiveStar: 0, fourStar: 0 };
+              draft.hiddensCnt = { normal: 0, withBonus: 0 };
+              draft.score = 0;
+            }));
+          }}>清零</button>
           <button class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 text-sm sm:px-3 sm:py-2" onClick={props.onCopyClicked}>导出</button>
           <button class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 text-sm sm:px-3 sm:py-2" onClick={props.onImportClicked}>导入</button>
         </div>
