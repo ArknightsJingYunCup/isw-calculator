@@ -407,7 +407,7 @@ enum OperationModifier {
 }
 
 // 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
-const testStoreValue: Store = {
+const createTestStoreValue = (): Store => ({
   squad: OpeningSquad.其他,
   limitedOperators: [
     LimitedOperator.电弧
@@ -494,9 +494,9 @@ const testStoreValue: Store = {
     withBonus: 1,
   },
   score: 20,
-};
+});
 
-const defaultStoreValue: Store = {
+const createDefaultStoreValue = (): Store => ({
   squad: OpeningSquad.其他,
   limitedOperators: [],
   emergencyRecords: [],
@@ -519,7 +519,7 @@ const defaultStoreValue: Store = {
     withBonus: 0,
   },
   score: 0,
-};
+});
 
 // 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
 const bossOperationModiferMap: OperationModifierMap<typeof BonusBossOperation, typeof OperationModifier> = {
@@ -695,8 +695,8 @@ function createTmpOperatorInput(
 export function JingYunCup4() {
   const sm = createMediaQuery("(max-width: 40rem)");
 
-  const [store, setStore] = createStore<Store>({ ...defaultStoreValue });
-  // const [store, setStore] = createStore<Store>({ ...testStoreValue });
+  const [store, setStore] = createStore<Store>(createDefaultStoreValue());
+  // const [store, setStore] = createStore<Store>(createTestStoreValue());
 
   // MARK: UI: 开局设置
   const OpeningCard: Component = () => <>
@@ -1010,7 +1010,7 @@ export function JingYunCup4() {
           </span>
         </div>
         <div class="flex gap-2 flex-shrink-0">
-          <button class="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium sm:px-3 sm:py-2" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
+          <button class="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium sm:px-3 sm:py-2" onClick={() => { setStore(createDefaultStoreValue()) }}>清零</button>
           <button class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 text-sm sm:px-3 sm:py-2" onClick={props.onCopyClicked}>导出</button>
           <button class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 text-sm sm:px-3 sm:py-2" onClick={props.onImportClicked}>导入</button>
         </div>
