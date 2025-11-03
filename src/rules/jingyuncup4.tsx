@@ -22,14 +22,18 @@ enum LimitedOperator {
   斩业星熊 = "斩业星熊",
   酒神 = "酒神",
   水月 = "水月",
+  灵智 = "灵智",
   玛恩纳 = "玛恩纳",
   隐德来希 = "隐德来希",
   逻各斯 = "逻各斯",
   阿斯卡纶 = "阿斯卡纶",
   娜仁图亚 = "娜仁图亚",
   琳琅诗怀雅 = "琳琅诗怀雅",
+  初雪 = "初雪",
   凯尔希 = "凯尔希",
   迷迭香 = "迷迭香",
+  银灰 = "银灰",
+  霍尔海雅 = "霍尔海雅",
   安洁莉娜 = "安洁莉娜",
   麒麟R夜刀 = "麒麟R夜刀",
   伊内丝 = "伊内丝",
@@ -46,14 +50,18 @@ const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.斩业星熊]: 4,
   [LimitedOperator.酒神]: 4,
   [LimitedOperator.水月]: 4,
+  [LimitedOperator.灵智]: 4,
   [LimitedOperator.玛恩纳]: 3,
   [LimitedOperator.隐德来希]: 3,
   [LimitedOperator.逻各斯]: 3,
   [LimitedOperator.阿斯卡纶]: 3,
   [LimitedOperator.娜仁图亚]: 3,
   [LimitedOperator.琳琅诗怀雅]: 3,
+  [LimitedOperator.初雪]: 3,
   [LimitedOperator.凯尔希]: 2,
   [LimitedOperator.迷迭香]: 2,
+  [LimitedOperator.银灰]: 2,
+  [LimitedOperator.霍尔海雅]: 2,
   [LimitedOperator.安洁莉娜]: 1,
   [LimitedOperator.麒麟R夜刀]: 1,
   [LimitedOperator.伊内丝]: 1,
@@ -921,7 +929,7 @@ export function JingYunCup4() {
   // 2. 比赛期间消耗前瞻性投资余额小于 60 的不扣分，若消耗量超过 60 源石锭，每超出 1 点源石锭扣除 50 分
   const { score: withdrawScore, ui: withdrawUI } = createWithdrawInput(
     () => store.withdrawCnt, (v) => setStore("withdrawCnt", v),
-    40, -60
+    60, -60
   );
   // 3. 比赛过程中，选取临时招募干员可获得加分。每个六星干员+50 分，每个五星干员+20分，每个四星干员+10 分。
   const { score: tmpOperatorScore, ui: tmpOperatorUI } = createTmpOperatorInput(
