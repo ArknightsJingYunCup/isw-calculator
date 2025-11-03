@@ -1,9 +1,11 @@
 body {
   margin: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   overflow-x: hidden;
   overflow-y: hidden;
+  /* ?????????????? */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 :root {
@@ -24,7 +26,7 @@ body {
 
 #root {
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   overflow-x: hidden;
   overflow-y: hidden;
 }
