@@ -1040,7 +1040,7 @@ export function JingYunCup4() {
               </Match>
             </Switch>
           </div>
-          <div class="flex flex-col shrink-0 bg-white border-t-2 border-gray-200 shadow-lg">
+          <div class="flex flex-col shrink-0 bg-white border-t-2 border-gray-200 shadow-lg" style={`padding-bottom: max(env(safe-area-inset-bottom), 0px)`}>
             <div class="flex w-full">
               <ToggleGroup.Root
                 value={[tab()]}
