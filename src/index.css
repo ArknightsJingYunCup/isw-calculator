@@ -24,6 +24,13 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+@media (max-width: 40rem) {
+  :root {
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
+
 #root {
   width: 100vw;
   height: 100dvh;
