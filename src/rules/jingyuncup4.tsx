@@ -1,12 +1,12 @@
-import { Accessor, Component, createEffect, createSignal, For, Match, Show, Switch, Index, Setter, JSX } from "solid-js";
+import { Accessor, Component, createSignal, For, Match, Switch, Setter, JSX } from "solid-js";
 import { Dialog } from "@ark-ui/solid/dialog";
-import { Checkbox } from "@ark-ui/solid/checkbox";
+import { ToggleGroup } from "@ark-ui/solid/toggle-group";
 import { Portal } from "solid-js/web";
 
 import { createStore, produce } from "solid-js/store";
 import { enumKeys, enumValues, readJson, saveJson, StringEnum } from "../lib/utils";
 import { createMediaQuery } from "@solid-primitives/media";
-import { AddDefaultModifierRecordModal, createCollectibleInput, createModifierRecordTable, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, EnumToggleGroup, FullOperationModifierMap, LevelModifierRecord, LevelOperationListMap, ModifierRecord, ModifierSelector, NumberInput, OperationModifierMap } from "../components";
+import { AddDefaultModifierRecordModal, Card, createCollectibleInput, createModifierRecordTable, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, EnumToggleGroup, FullOperationModifierMap, LevelModifierRecord, LevelOperationListMap, ModifierRecord, ModifierSelector, NumberInput, OperationModifierMap } from "../components";
 
 export function levelNum(level: Level): number {
   return enumValues(Level).indexOf(level) + 1;
@@ -571,7 +571,7 @@ function createBossOperationInput(
         <div class="flex items-center gap-4">
           <h6 class="text-xl font-semibold">领袖作战</h6>
           <div class="flex-grow" />
-          <span>该部分得分: {score().toFixed(1)}</span>
+          <span>分数: {score().toFixed(1)}</span>
         </div>
         <For each={enumValues(BossLevel)}>{(level, idx) => {
           const operations = levelBossOperationListMap[level];
@@ -628,7 +628,7 @@ function createHiddensInput(
     score,
     ui: () => <>
       <div class="flex flex-col gap-2">
-        <span>隐藏击杀</span>
+        <span class="font-medium">隐藏击杀</span>
         <div class="flex gap-1 max-w-full">
           <div class="flex flex-col gap-1 flex-1 min-w-0">
             <label class="text-sm text-gray-600">无鸭爵金币（+10）</label>
@@ -669,7 +669,7 @@ function createTmpOperatorInput(
     score,
     ui: () => <>
       <div class="flex flex-col gap-2">
-        <span>临时招募</span>
+        <span class="font-medium">临时招募</span>
         <div class="flex gap-1 max-w-full">
           <div class="flex flex-col gap-1 flex-1 min-w-0">
             <label class="text-sm text-gray-600">六星数量</label>
@@ -693,14 +693,14 @@ function createTmpOperatorInput(
 }
 
 export function JingYunCup4() {
-  const sm = createMediaQuery("(max-width: 600px)");
+  const sm = createMediaQuery("(max-width: 40rem)");
 
   const [store, setStore] = createStore<Store>({ ...defaultStoreValue });
   // const [store, setStore] = createStore<Store>({ ...testStoreValue });
 
   // MARK: UI: 开局设置
-  const OpeningPart: Component = () => <>
-    <div class="flex flex-col gap-2 p-2 sm:p-4 bg-white rounded-lg shadow shrink-0 z-20">
+  const OpeningCard: Component = () => <>
+    <Card>
       <h6 class="text-xl font-semibold">开局分队</h6>
       <div class="flex gap-2 sm:gap-4 flex-wrap justify-stretch">
         {EnumToggleGroup(
@@ -710,7 +710,7 @@ export function JingYunCup4() {
           (v) => <span>{v}{v === OpeningSquad.游客分队 ? "（-0.1）" : ""}</span>
         )}
       </div>
-    </div>
+    </Card>
   </>
 
   // MARK: UI: 紧急作战
@@ -734,7 +734,7 @@ export function JingYunCup4() {
     onRemoveRecord: removeEmergencyRecord,
   });
 
-  const EmergencyPart = () => <>
+  const EmergencyCard = () => <>
     <AddDefaultModifierRecordModal
       open={emergencyOpen}
       onClose={() => setEmergencyOpen(false)}
@@ -752,7 +752,7 @@ export function JingYunCup4() {
         operations: [EmergencyOperation.其他]
       }}
     />
-    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+    <Card>
       <div class="flex items-center gap-4">
         <h6 class="text-xl font-semibold">紧急作战</h6>
         <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
@@ -761,10 +761,10 @@ export function JingYunCup4() {
           添加
         </button>
         <div class="flex-grow" />
-        <span>该部分得分: {emergencyScore().toFixed(1)}</span>
+        <span>分数: {emergencyScore().toFixed(1)}</span>
       </div>
       {emergencyUI()}
-    </div>
+    </Card>
   </>
 
   // MARK: UI: 特殊事件
@@ -806,6 +806,7 @@ export function JingYunCup4() {
           <div class="flex items-center gap-2 border border-gray-300 rounded px-2">
             <span class="text-sm text-gray-600">坠崖数:</span>
             <input
+              placeholder="坠崖数"
               type="number"
               class="w-16 px-2 py-1 text-sm border-none focus:outline-none"
               value={record.extraData?.count || 0}
@@ -824,7 +825,7 @@ export function JingYunCup4() {
     }
   });
 
-  const SpecialEventPart = () => <>
+  const SpecialEventCard = () => <>
     <AddDefaultModifierRecordModal
       open={specialEventOpen}
       onClose={() => setSpecialEventOpen(false)}
@@ -833,7 +834,7 @@ export function JingYunCup4() {
       operationEnum={SpecialEvent}
       operationModifierMap={specialEventModifierMap}
     />
-    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+    <Card>
       <div class="flex items-center gap-4">
         <h6 class="text-xl font-semibold">特殊事件</h6>
         <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
@@ -842,10 +843,10 @@ export function JingYunCup4() {
           添加
         </button>
         <div class="flex-grow" />
-        <span>该部分得分: {specialEventScore().toFixed(1)}</span>
+        <span>分数: {specialEventScore().toFixed(1)}</span>
       </div>
       {specialEventUI()}
-    </div>
+    </Card>
   </>
 
   // MARK: UI: 是非境祸乱
@@ -867,7 +868,7 @@ export function JingYunCup4() {
     onRemoveRecord: removeChaosNodeRecord,
   });
 
-  const ChaosNodePart = () => <>
+  const ChaosNodeCard = () => <>
     <AddDefaultModifierRecordModal
       open={chaosNodeOpen}
       onClose={() => setChaosNodeOpen(false)}
@@ -876,7 +877,7 @@ export function JingYunCup4() {
       operationEnum={ChaosNode}
       operationModifierMap={chaosNodeModifierMap}
     />
-    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+    <Card>
       <div class="flex items-center gap-4">
         <h6 class="text-xl font-semibold">是非境祸乱</h6>
         <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
@@ -885,10 +886,10 @@ export function JingYunCup4() {
           添加
         </button>
         <div class="flex-grow" />
-        <span>该部分得分: {chaosNodeScore().toFixed(1)}</span>
+        <span>分数: {chaosNodeScore().toFixed(1)}</span>
       </div>
       {chaosNodeUI()}
-    </div>
+    </Card>
   </>
 
   // MARK: UI: 领袖作战
@@ -909,7 +910,7 @@ export function JingYunCup4() {
         <h6 class="text-xl font-semibold">阵容规则</h6>
         <div class="flex-grow" />
         <span>阵容消耗: <span class={calcLimitedOperatorCosts() > 10 ? "text-red-600" : "text-green-600"}>{calcLimitedOperatorCosts()} / 10</span></span>
-        <span>该部分得分: {calcLimitedOperatorsSum()}</span>
+        <span>分数: {calcLimitedOperatorsSum()}</span>
       </div>
       <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣500分。</span>
       {EnumMultiSelectInput(
@@ -950,13 +951,10 @@ export function JingYunCup4() {
   }
 
   // MARK: UI: 结算 & 其他
-  const SumPart: Component = () => <>
-    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow sm:max-w-full md:max-w-60 overflow-y-auto">
-      <h6 class="text-xl font-semibold pb-2">结算</h6>
+  const OtherCard: Component = () => <>
+    <Card class="flex-1 overflow-y-auto">
+      <h6 class="text-xl font-semibold pb-2">其他</h6>
       <div class="flex flex-col gap-2 flex-1">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm text-gray-600">倍率：{factor()}</label>
-        </div>
         {/* 收藏品 */}
         {collectiblesUI()}
         {/* 取钱 */}
@@ -965,70 +963,126 @@ export function JingYunCup4() {
         {tmpOperatorUI()}
         {/* 隐藏击杀 */}
         {hiddensUI()}
-        <div class="flex flex-col gap-1">
-          <label class="text-sm text-gray-600">结算分</label>
-          <NumberInput value={() => store.score} setValue={(v) => setStore("score", v)} />
-          <span class="text-xs text-gray-600">{store.score} x {factor()} = {factoredScore()}</span>
-        </div>
       </div>
-    </div>
+    </Card>
   </>
 
+
+  enum Tab {
+    Squad = "分队&阵容",
+    Operation = "作战",
+    Others = "其他",
+  }
+  const [tab, setTab] = createSignal(Tab.Squad);
+
+  // 计算各 Tab 的分数
+  const tabScoreMap: { [key in Tab]: () => number } = {
+    [Tab.Squad]: () => calcLimitedOperatorsSum(),
+    [Tab.Operation]: () => emergencyScore() + specialEventScore() + chaosNodeScore() + bossScore(),
+    [Tab.Others]: () => collectiblesScore() + withdrawScore() + tmpOperatorScore() + hiddensScore(),
+  };
   const calcTotalSum = () => {
-    return emergencyScore() + specialEventScore() + chaosNodeScore() + bossScore() +
-      calcLimitedOperatorsSum() + collectiblesScore() +
-      withdrawScore() + tmpOperatorScore() + hiddensScore()
-      + factoredScore();
+    return enumValues(Tab).reduce((sum, tab) => sum + tabScoreMap[tab](), 0) + factoredScore();
+    // return emergencyScore() + specialEventScore() + chaosNodeScore() + bossScore() +
+    //   calcLimitedOperatorsSum() + collectiblesScore() +
+    //   withdrawScore() + tmpOperatorScore() + hiddensScore()
+    //   + factoredScore();
   }
 
   const [copyJsonOpen, setCopyJsonOpen] = createSignal(false);
   const [loadJsonOpen, setLoadJsonOpen] = createSignal(false);
   const [json, setJson] = createSignal("");
 
-  enum Tab {
-    Operation = "作战",
-    OperatorsAndKingsCollectible = "阵容和国王套",
-    Others = "其他",
-  }
-  const [tab, setTab] = createSignal(Tab.Operation);
+  // 共用的总分、结算分显示和操作按钮组件
+  const TotalAndActions = (props: { onCopyClicked: () => void; onImportClicked: () => void }) => (
+    <>
+      <div class="flex gap-2 mb-2 max-w-full">
+        <div class="flex flex-col w-full gap-1">
+          <label class="text-sm text-gray-600">结算分</label>
+          <NumberInput class="w-full" value={() => store.score} setValue={(v) => setStore("score", v)} />
+          <span class="text-xs text-gray-500">{store.score} x {factor().toFixed(1)} = {factoredScore().toFixed(1)}</span>
+        </div>
+      </div>
+      <div class="flex gap-2 justify-between sm:flex-col max-w-full">
+        <div class="flex items-center">
+          <span class="text-lg font-bold text-blue-600">
+            总分：<span class="text-2xl">{calcTotalSum().toFixed(1)}</span>
+          </span>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          <button class="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium sm:px-3 sm:py-2" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
+          <button class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 text-sm sm:px-3 sm:py-2" onClick={props.onCopyClicked}>导出</button>
+          <button class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 text-sm sm:px-3 sm:py-2" onClick={props.onImportClicked}>导入</button>
+        </div>
+      </div>
+    </>
+  );
 
   return <>
     <Switch>
       {/* 窄屏界面 */}
       <Match when={sm()}>
         <div class="flex h-full box-border flex-col">
-          <OpeningPart />
           <div class="flex flex-col flex-grow gap-2 overflow-y-auto p-2">
             <Switch>
               <Match when={tab() == Tab.Operation}>
-                <EmergencyPart />
-                <SpecialEventPart />
-                <ChaosNodePart />
+                <EmergencyCard />
+                <SpecialEventCard />
+                <ChaosNodeCard />
                 {bossUI()}
               </Match>
-              <Match when={tab() == Tab.OperatorsAndKingsCollectible}>
+              <Match when={tab() == Tab.Squad}>
+                <OpeningCard />
                 <LimitedOperatorsPart />
               </Match>
               <Match when={tab() == Tab.Others}>
-                <SumPart />
+                <OtherCard />
               </Match>
             </Switch>
           </div>
-          <div class="flex flex-col gap-2 shrink-0 bg-white border-t shadow-lg">
-            <div class="flex flex-wrap gap-2 p-2 items-center">
-              <span class="flex-shrink-0">总分：
-                <span class="text-2xl">{calcTotalSum()}</span>
-              </span>
-              <div class="flex-grow" />
-              <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
-
+          <div class="flex flex-col shrink-0 bg-white border-t-2 border-gray-200 shadow-lg">
+            <div class="flex w-full">
+              <ToggleGroup.Root
+                value={[tab()]}
+                onValueChange={(details) => {
+                  if (details.value.length > 0) {
+                    setTab(details.value[0] as Tab);
+                  }
+                }}
+                class="flex w-full"
+              >
+                <For each={enumValues(Tab)}>{(tabValue) => (
+                  <ToggleGroup.Item
+                    value={tabValue}
+                    class="flex-1 py-3 text-sm font-medium transition-colors flex flex-col items-center"
+                    classList={{
+                      "bg-blue-500 text-white": tab() === tabValue,
+                      "bg-white text-gray-700 hover:bg-gray-50": tab() !== tabValue
+                    }}
+                  >
+                    <div class="flex items-baseline gap-1">
+                      <span>{tabValue}</span>
+                      <span class="text-xs opacity-80">{tabScoreMap[tabValue]().toFixed(1)}</span>
+                    </div>
+                  </ToggleGroup.Item>
+                )}</For>
+              </ToggleGroup.Root>
+            </div>
+            <div class="px-3 py-3 gap-3 border-t border-gray-100">
+              <TotalAndActions
+                onCopyClicked={() => {
+                  setJson(JSON.stringify(store));
+                  setCopyJsonOpen(true);
+                }}
+                onImportClicked={() => setLoadJsonOpen(true)}
+              />
               <Dialog.Root open={copyJsonOpen()} onOpenChange={(details) => setCopyJsonOpen(details.open)}>
                 <Portal>
                   <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
                   <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
                     <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-[90%] sm:w-3/4 md:w-1/2 max-h-[80%] flex flex-col gap-2">
                       <Dialog.Title class="text-lg font-semibold">数据 JSON</Dialog.Title>
-                      <textarea class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none" value={json()} readonly />
+                      <textarea class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none" placeholder="数据json" value={json()} readonly />
                       <div class="flex gap-4 justify-end">
                         <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">关闭</Dialog.CloseTrigger>
                       </div>
@@ -1036,11 +1090,6 @@ export function JingYunCup4() {
                   </Dialog.Positioner>
                 </Portal>
               </Dialog.Root>
-
-              <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm flex-shrink-0" onClick={async () => {
-                setJson(JSON.stringify(store));
-                setCopyJsonOpen(true);
-              }}>复制 json</button>
 
               <Dialog.Root open={loadJsonOpen()} onOpenChange={(details) => setLoadJsonOpen(details.open)}>
                 <Portal>
@@ -1064,24 +1113,6 @@ export function JingYunCup4() {
                   </Dialog.Positioner>
                 </Portal>
               </Dialog.Root>
-
-              <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm flex-shrink-0" onClick={async () => {
-                setLoadJsonOpen(true);
-              }}>导入 json</button>
-            </div>
-            <div class="flex w-full border-t">
-              <For each={Object.values(Tab)}>{(item) =>
-                <button
-                  class="flex-1 py-3 text-sm transition-colors"
-                  classList={{
-                    "bg-blue-500 text-white": tab() === item,
-                    "bg-white text-gray-700 hover:bg-gray-50": tab() !== item
-                  }}
-                  onClick={() => setTab(item)}
-                >
-                  {item}
-                </button>
-              }</For>
             </div>
           </div>
         </div>
@@ -1096,30 +1127,60 @@ export function JingYunCup4() {
               单个“诡异行商”“易与”节点最多刷新4次。
               “昔字如烟”，“往昔难忆”关卡中，不允许在“岁躯”落下前在所在其地块部署任何单位。
             </span> */}
-            <OpeningPart />
-            <EmergencyPart />
-            <SpecialEventPart />
-            <ChaosNodePart />
-            {bossUI()}
+            <OpeningCard />
             <LimitedOperatorsPart />
+            <EmergencyCard />
+            <SpecialEventCard />
+            <ChaosNodeCard />
+            {bossUI()}
           </div>
-          <div class="flex flex-col min-w-[200px] gap-2">
-            <SumPart />
+          <div class="flex flex-col min-w-[200px] gap-2 max-w-60">
+            <OtherCard />
             <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow">
-              <span class="text-2xl">总计：{calcTotalSum().toFixed(1)}</span>
-              <div class="flex gap-2">
-                <button class="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
-                <button class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50" onClick={async () => {
-                  let content = JSON.stringify(store)
-                  await saveJson(content);
-                }}>保存</button>
-                <button class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50" onClick={async () => {
-                  const content = await readJson();
-                  let data = JSON.parse(content);
-                  console.log(data)
-                  setStore(data as Store)
-                }}>加载</button>
-              </div>
+              <TotalAndActions
+                onCopyClicked={() => {
+                  setJson(JSON.stringify(store));
+                  setCopyJsonOpen(true);
+                }}
+                onImportClicked={() => setLoadJsonOpen(true)}
+              />
+              <Dialog.Root open={copyJsonOpen()} onOpenChange={(details) => setCopyJsonOpen(details.open)}>
+                <Portal>
+                  <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
+                  <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
+                    <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-[90%] sm:w-3/4 md:w-1/2 max-h-[80%] flex flex-col gap-2">
+                      <Dialog.Title class="text-lg font-semibold">数据 JSON</Dialog.Title>
+                      <textarea class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none" placeholder="数据json" value={json()} readonly />
+                      <div class="flex gap-4 justify-end">
+                        <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">关闭</Dialog.CloseTrigger>
+                      </div>
+                    </Dialog.Content>
+                  </Dialog.Positioner>
+                </Portal>
+              </Dialog.Root>
+
+              <Dialog.Root open={loadJsonOpen()} onOpenChange={(details) => setLoadJsonOpen(details.open)}>
+                <Portal>
+                  <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
+                  <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
+                    <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-[90%] sm:w-3/4 md:w-1/2 max-h-[80%] flex flex-col gap-2">
+                      <Dialog.Title class="text-lg font-semibold">导入 JSON</Dialog.Title>
+                      <textarea
+                        class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none"
+                        value={json()}
+                        onInput={(e) => setJson(e.currentTarget.value)}
+                      />
+                      <div class="flex gap-4 justify-end">
+                        <button class="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" onClick={() => {
+                          setStore(JSON.parse(json()))
+                          setLoadJsonOpen(false);
+                        }}>确定</button>
+                        <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">取消</Dialog.CloseTrigger>
+                      </div>
+                    </Dialog.Content>
+                  </Dialog.Positioner>
+                </Portal>
+              </Dialog.Root>
             </div>
           </div>
         </div>

@@ -5,6 +5,10 @@ import { Dialog } from "@ark-ui/solid/dialog";
 import { Portal } from "solid-js/web";
 import { Level, levelNum } from "../rules/jingyuncup4";
 
+export function Card(props: { children: JSX.Element, class?: string }) {
+  return <div class={`flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 ${props.class}`}>{props.children}</div>
+}
+
 export function EnumSelectInput<E extends StringEnum>(
   e: E,
   selected: Accessor<E[keyof E] | null>, setSelected: (v: E[keyof E]) => void,
@@ -67,7 +71,7 @@ export function EnumToggleGroup<E extends StringEnum>(
         <For each={values}>{(value, idx) => {
           const isSelected = () => selected() === value;
           const isLast = () => idx() === values.length - 1;
-          return <ToggleGroup.Item 
+          return <ToggleGroup.Item
             value={value as string}
             class="px-4 py-2 transition-colors cursor-pointer"
             classList={{
@@ -123,10 +127,10 @@ export function EnumMultiSelectInput<E extends EnumLike>(
   return MultiSelectInput(enumValues(e), selected, setSelected, entryElem);
 }
 
-export const NumberInput: Component<{ value: Accessor<number>, setValue: (v: number) => void, upperLimit?: number }> = (props) => {
+export const NumberInput: Component<{ value: Accessor<number>, setValue: (v: number) => void, upperLimit?: number, class?: string }> = (props) => {
   return <input
     type="number"
-    class="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none"
+    class={`border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:outline-none ${props.class}`}
     value={props.value()}
     onInput={(e) => {
       const value = parseInt(e.currentTarget.value) || 0;
