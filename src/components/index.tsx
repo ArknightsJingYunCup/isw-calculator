@@ -301,7 +301,7 @@ export function AddDefaultModifierRecordModal<L extends StringEnum, O extends St
       <Portal>
         <Dialog.Backdrop class="fixed inset-0 bg-black/50 z-40" />
         <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4 z-40">
-          <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col">
+          <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-[90%] sm:w-3/4 md:w-1/2 max-h-[80%] flex flex-col">
             <Dialog.Title class="text-xl font-semibold mb-2">{title}</Dialog.Title>
             <div class="flex flex-col gap-4 overflow-y-auto">
               {/* 如果提供了 levelOperationMap，按照 level 分组显示 */}

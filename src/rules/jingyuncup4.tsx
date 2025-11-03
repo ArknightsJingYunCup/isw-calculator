@@ -700,9 +700,9 @@ export function JingYunCup4() {
 
   // MARK: UI: 开局设置
   const OpeningPart: Component = () => <>
-    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0 z-20">
+    <div class="flex flex-col gap-2 p-2 sm:p-4 bg-white rounded-lg shadow shrink-0 z-20">
       <h6 class="text-xl font-semibold">开局分队</h6>
-      <div class="flex gap-4 flex-wrap justify-stretch">
+      <div class="flex gap-2 sm:gap-4 flex-wrap justify-stretch">
         {EnumToggleGroup(
           OpeningSquad,
           () => store.squad,
@@ -951,7 +951,7 @@ export function JingYunCup4() {
 
   // MARK: UI: 结算 & 其他
   const SumPart: Component = () => <>
-    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow max-w-60 overflow-y-auto">
+    <div class="flex flex-col gap-2 flex-grow p-4 bg-white rounded-lg shadow sm:max-w-full md:max-w-60 overflow-y-auto">
       <h6 class="text-xl font-semibold pb-2">结算</h6>
       <div class="flex flex-col gap-2 flex-1">
         <div class="flex flex-col gap-1">
@@ -985,7 +985,6 @@ export function JingYunCup4() {
   const [loadJsonOpen, setLoadJsonOpen] = createSignal(false);
   const [json, setJson] = createSignal("");
 
-  // TODO: 窄屏适配
   enum Tab {
     Operation = "作战",
     OperatorsAndKingsCollectible = "阵容和国王套",
@@ -1000,34 +999,34 @@ export function JingYunCup4() {
         <div class="flex h-full box-border flex-col">
           <OpeningPart />
           <div class="flex flex-col flex-grow gap-2 overflow-y-auto p-2">
-            {/* <Switch>
+            <Switch>
               <Match when={tab() == Tab.Operation}>
                 <EmergencyPart />
-                <HiddenPart />
-                <BossPart />
+                <SpecialEventPart />
+                <ChaosNodePart />
+                {bossUI()}
               </Match>
               <Match when={tab() == Tab.OperatorsAndKingsCollectible}>
-                <OperatorPart />
-                <KingsCollectivesPart />
+                <LimitedOperatorsPart />
               </Match>
               <Match when={tab() == Tab.Others}>
                 <SumPart />
               </Match>
-            </Switch> */}
+            </Switch>
           </div>
           <div class="flex flex-col gap-2 shrink-0 bg-white border-t shadow-lg">
-            <div class="flex gap-2 p-2">
-              <span>总分：
+            <div class="flex flex-wrap gap-2 p-2 items-center">
+              <span class="flex-shrink-0">总分：
                 <span class="text-2xl">{calcTotalSum()}</span>
               </span>
               <div class="flex-grow" />
-              <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
+              <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0" onClick={() => { setStore({ ...defaultStoreValue }) }}>清零</button>
 
               <Dialog.Root open={copyJsonOpen()} onOpenChange={(details) => setCopyJsonOpen(details.open)}>
                 <Portal>
                   <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
                   <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
-                    <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col gap-2">
+                    <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-[90%] sm:w-3/4 md:w-1/2 max-h-[80%] flex flex-col gap-2">
                       <Dialog.Title class="text-lg font-semibold">数据 JSON</Dialog.Title>
                       <textarea class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none" value={json()} readonly />
                       <div class="flex gap-4 justify-end">
@@ -1038,7 +1037,7 @@ export function JingYunCup4() {
                 </Portal>
               </Dialog.Root>
 
-              <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm" onClick={async () => {
+              <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm flex-shrink-0" onClick={async () => {
                 setJson(JSON.stringify(store));
                 setCopyJsonOpen(true);
               }}>复制 json</button>
@@ -1047,7 +1046,7 @@ export function JingYunCup4() {
                 <Portal>
                   <Dialog.Backdrop class="fixed inset-0 bg-black/50" />
                   <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4">
-                    <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-1/2 max-h-[80%] flex flex-col gap-2">
+                    <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-[90%] sm:w-3/4 md:w-1/2 max-h-[80%] flex flex-col gap-2">
                       <Dialog.Title class="text-lg font-semibold">导入 JSON</Dialog.Title>
                       <textarea
                         class="border border-gray-300 rounded px-3 py-2 min-h-24 max-h-24 resize-none"
@@ -1066,7 +1065,7 @@ export function JingYunCup4() {
                 </Portal>
               </Dialog.Root>
 
-              <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm" onClick={async () => {
+              <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm flex-shrink-0" onClick={async () => {
                 setLoadJsonOpen(true);
               }}>导入 json</button>
             </div>
