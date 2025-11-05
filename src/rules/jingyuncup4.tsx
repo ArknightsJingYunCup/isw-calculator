@@ -623,7 +623,7 @@ function createHiddensInput(
   const withBonusCnt = () => hiddensCnt().withBonus;
   const setNormalCnt = (v: number): void => { setHiddensCnt((cnt) => ({ ...cnt, normal: v })); };
   const setWithBonusCnt = (v: number): void => { setHiddensCnt((cnt) => ({ ...cnt, withBonus: v })); };
-  const score = () => normalCnt() * 10 + withBonusCnt() * 30;
+  const score = () => normalCnt() * 20 + withBonusCnt() * 30;
   return {
     score,
     ui: () => <>
@@ -631,7 +631,7 @@ function createHiddensInput(
         <span class="font-medium">隐藏击杀</span>
         <div class="flex gap-1 max-w-full">
           <div class="flex flex-col gap-1 flex-1 min-w-0">
-            <label class="text-sm text-gray-600">无鸭爵金币（+10）</label>
+            <label class="text-sm text-gray-600">无鸭爵金币（+20）</label>
             <NumberInput value={normalCnt} setValue={setNormalCnt} />
           </div>
           <div class="flex flex-col gap-1 flex-1 min-w-0">
@@ -640,7 +640,7 @@ function createHiddensInput(
           </div>
         </div>
         <span class="text-xs">
-          {`${normalCnt()} x 10 + ${withBonusCnt()} x 30 = ${score()}`}
+          {`${normalCnt()} x 20 + ${withBonusCnt()} x 30 = ${score()}`}
         </span>
       </div>
     </>
