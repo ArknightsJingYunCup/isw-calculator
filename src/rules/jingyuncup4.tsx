@@ -129,6 +129,7 @@ enum EmergencyOperation {
   炎灼 = "炎灼",
   人镇 = "人镇",
   借力打力 = "借力打力",
+  普通越山海 = "普通越山海",
   越山海 = "越山海",
   其他 = "其他",
 }
@@ -149,6 +150,8 @@ const levelEmergencyOperationMap: LevelOperationListMap<typeof EmergencyLevel, t
     EmergencyOperation.炎灼,
     EmergencyOperation.人镇,
     EmergencyOperation.借力打力,
+    EmergencyOperation.越山海,
+    EmergencyOperation.普通越山海,
   ]
 }
 
@@ -190,6 +193,7 @@ const emergencyOperationBaseScore = 50;
 
 enum EmergencyOperationModifier {
   default = "",
+  emergency = "紧急",
   perfect = "无漏",
 }
 
@@ -197,51 +201,57 @@ enum EmergencyOperationModifier {
 // 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
 const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOperation, typeof EmergencyOperationModifier> = {
   [EmergencyOperation.峥嵘战功]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
   },
   [EmergencyOperation.赶场戏班]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
   },
   [EmergencyOperation.青山不语]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
   },
   [EmergencyOperation.离域检查]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
   },
   [EmergencyOperation.薄礼一份]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
   },
   [EmergencyOperation.邙山镇地方志]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
   },
   [EmergencyOperation.不成烟火]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 50,
   },
   [EmergencyOperation.炎灼]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
   },
   [EmergencyOperation.人镇]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
   },
   [EmergencyOperation.借力打力]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 70,
   },
+  // 普通 + 0 无漏 + 30
+  // 紧急 + 50 无漏 + 100
+  [EmergencyOperation.普通越山海]: {
+    [EmergencyOperationModifier.default]: (v: number) => v,
+    [EmergencyOperationModifier.perfect]: (v: number) => v + 30,
+  },
   [EmergencyOperation.越山海]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + 30,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
     [EmergencyOperationModifier.perfect]: (v: number) => v + 100,
   },
   [EmergencyOperation.其他]: {
-    [EmergencyOperationModifier.default]: (v: number) => v + emergencyOperationBaseScore,
+    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
   },
 }
 
@@ -571,7 +581,7 @@ function createBossOperationInput(
         <div class="flex items-center gap-4">
           <h6 class="text-xl font-semibold">领袖作战</h6>
           <div class="flex-grow" />
-          <span>分数: {score().toFixed(1)}</span>
+          <span>分数: {score().toFixed(2)}</span>
         </div>
         <For each={enumValues(BossLevel)}>{(level, idx) => {
           const operations = levelBossOperationListMap[level];
@@ -761,7 +771,7 @@ export function JingYunCup4() {
           添加
         </button>
         <div class="flex-grow" />
-        <span>分数: {emergencyScore().toFixed(1)}</span>
+        <span>分数: {emergencyScore().toFixed(2)}</span>
       </div>
       {emergencyUI()}
     </Card>
@@ -843,7 +853,7 @@ export function JingYunCup4() {
           添加
         </button>
         <div class="flex-grow" />
-        <span>分数: {specialEventScore().toFixed(1)}</span>
+        <span>分数: {specialEventScore().toFixed(2)}</span>
       </div>
       {specialEventUI()}
     </Card>
@@ -886,7 +896,7 @@ export function JingYunCup4() {
           添加
         </button>
         <div class="flex-grow" />
-        <span>分数: {chaosNodeScore().toFixed(1)}</span>
+        <span>分数: {chaosNodeScore().toFixed(2)}</span>
       </div>
       {chaosNodeUI()}
     </Card>
@@ -1000,13 +1010,13 @@ export function JingYunCup4() {
         <div class="flex flex-col w-full gap-1">
           <label class="text-sm text-gray-600">结算分</label>
           <NumberInput class="w-full" value={() => store.score} setValue={(v) => setStore("score", v)} />
-          <span class="text-xs text-gray-500">{store.score} x {factor().toFixed(1)} = {factoredScore().toFixed(1)}</span>
+          <span class="text-xs text-gray-500">{store.score} x {factor().toFixed(2)} = {factoredScore().toFixed(2)}</span>
         </div>
       </div>
       <div class="flex gap-2 justify-between sm:flex-col max-w-full">
         <div class="flex items-center">
           <span class="text-lg font-bold text-blue-600">
-            总分：<span class="text-2xl">{calcTotalSum().toFixed(1)}</span>
+            总分：<span class="text-2xl">{calcTotalSum().toFixed(2)}</span>
           </span>
         </div>
         <div class="flex gap-2 flex-shrink-0">
@@ -1062,7 +1072,7 @@ export function JingYunCup4() {
                   >
                     <div class="flex items-baseline gap-1">
                       <span>{tabValue}</span>
-                      <span class="text-xs opacity-80">{tabScoreMap[tabValue]().toFixed(1)}</span>
+                      <span class="text-xs opacity-80">{tabScoreMap[tabValue]().toFixed(2)}</span>
                     </div>
                   </ToggleGroup.Item>
                 )}</For>
