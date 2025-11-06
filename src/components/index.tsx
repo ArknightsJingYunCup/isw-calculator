@@ -211,6 +211,22 @@ export type ModifierMap<M extends StringEnum> = {
   [key in M[keyof M]]?: (v: number) => number
 }
 
+// MARK: Tag System Types
+export type TagRecords<T extends StringEnum> = {
+  [key in T[keyof T]]?: boolean | number
+}
+
+export type Modifier<T extends StringEnum> = (v: number, tags: TagRecords<T>) => number;
+export type OperationModifiers<O extends StringEnum, T extends StringEnum> = {
+  [key in O[keyof O]]: Modifier<T>[]
+}
+
+export type TagRecord<O extends StringEnum, T extends StringEnum> = {
+  operation: O[keyof O],
+  tags: TagRecords<T>,
+  extraData?: Record<string, any>,
+}
+
 export function ModifierSelector<O extends StringEnum, M extends StringEnum>(
   entry: O[keyof O],
   operationModifierMap: FullOperationModifierMap<O, M>,
@@ -485,4 +501,236 @@ export function createModifierRecordTable<O extends StringEnum, M extends String
       </div>
     </>
   }
+}
+
+// MARK: Tag System Functions
+enum TagType {
+  Boolean = "Boolean",
+  Number = "Number",
+}
+
+export function createTagRecordTable<O extends StringEnum, T extends StringEnum>(props: {
+  records: Accessor<TagRecord<O, T>[]>,
+  operationModifiers: OperationModifiers<O, T>,
+  operationTags: { [key in O[keyof O]]: T[keyof T][] },
+  operationTagTypeMap: { [key in T[keyof T]]: TagType },
+  onUpdateRecord: (index: number, record: TagRecord<O, T>) => void,
+  onRemoveRecord: (index: number) => void,
+  extraUI?: (record: TagRecord<O, T>, index: number, onUpdate: (record: TagRecord<O, T>) => void) => JSX.Element,
+}): {
+  score: Accessor<number>,
+  ui: () => JSX.Element,
+} {
+  const { records, operationModifiers, operationTags, operationTagTypeMap, onUpdateRecord, onRemoveRecord, extraUI } = props;
+
+  const recordsScore = () => records().map((record) => {
+    const modifiers = operationModifiers[record.operation];
+    return modifiers.reduce((sum, modifier) => modifier(sum, record.tags), 0);
+  });
+  const score = () => recordsScore().reduce((sum, x) => sum + x, 0);
+
+  return {
+    score,
+    ui: () => <>
+      <div class="flex flex-col gap-2">
+        <For each={records()}>
+          {(record, idx) => {
+            const availableTags = operationTags[record.operation];
+            const defaultTag = availableTags[0];
+            const nonDefaultTags = availableTags.slice(1);
+
+            return (
+              <div class="flex gap-2 items-center">
+                <div class="flex gap-2 items-center">
+                  <span>+{recordsScore()[idx()].toFixed(1)}</span>
+                  <span class="font-medium whitespace-nowrap">{defaultTag ? `${record.operation}（${defaultTag}）` : record.operation}</span>
+                </div>
+
+                {/* ToggleGroup for tags */}
+                {nonDefaultTags.length > 0 && (
+                  <div class="flex border border-gray-300 rounded overflow-hidden">
+                    <ToggleGroup.Root
+                      multiple
+                      value={nonDefaultTags.filter(tag => record.tags[tag])}
+                      onValueChange={(e) => {
+                        const newTags: TagRecords<T> = { ...record.tags };
+                        // 确保默认 tag 存在
+                        // if (!newTags[defaultTag]) {
+                        //   newTags[defaultTag] = true;
+                        // }
+                        // 更新非默认 tags
+                        nonDefaultTags.forEach(tag => {
+                          if (e.value.includes(tag)) {
+                            newTags[tag] = true;
+                          } else {
+                            delete newTags[tag];
+                          }
+                        });
+                        onUpdateRecord(idx(), {
+                          ...record,
+                          tags: newTags
+                        });
+                      }}
+                      class="flex flex-grow"
+                    >
+                      <For each={nonDefaultTags}>{(tag, tagIdx) => {
+                        const isSelected = () => record.tags[tag] === true;
+                        const isLast = () => tagIdx() === nonDefaultTags.length - 1;
+
+                        return (
+                          <ToggleGroup.Item
+                            value={tag}
+                            class="px-3 py-1 transition-colors cursor-pointer flex-grow text-sm"
+                            classList={{
+                              "text-white bg-green-500": isSelected(),
+                              "text-gray-700 hover:bg-gray-50": !isSelected(),
+                              "border-r border-gray-300": !isLast(),
+                            }}
+                          >
+                            {tag}
+                          </ToggleGroup.Item>
+                        );
+                      }}</For>
+                    </ToggleGroup.Root>
+                  </div>
+                )}
+
+                {/* Extra UI */}
+                {extraUI && extraUI(record, idx(), (updatedRecord) => onUpdateRecord(idx(), updatedRecord))}
+
+                <div class="flex-grow" />
+
+                {/* Delete button */}
+                <button
+                  class="text-red-500 hover:text-red-700 p-2 border border-gray-300 rounded hover:bg-red-50 shrink-0"
+                  onClick={() => onRemoveRecord(idx())}
+                  aria-label="删除"
+                >
+                  <div class="i-mdi-delete text-xl" />
+                </button>
+              </div>
+            );
+          }}
+        </For>
+      </div>
+    </>
+  }
+}
+
+export function AddDefaultTagRecordModal<L extends StringEnum, O extends StringEnum, T extends StringEnum>(props: {
+  open: Accessor<boolean>,
+  onClose: () => void,
+  onAddRecord: (record: TagRecord<O, T>) => void,
+  title: string,
+  operationEnum: O,
+  operationTags: { [key in O[keyof O]]: T[keyof T][] },
+  levelOperationMap?: {
+    levels: L,
+    levelKeys: (keyof L)[],
+    map: { [level in L[keyof L]]: O[keyof O][] }
+  },
+  extraOperations?: {
+    label: string,
+    operations: O[keyof O][]
+  }
+}) {
+  const { open, onClose, onAddRecord, title, operationEnum, operationTags, levelOperationMap, extraOperations } = props;
+
+  // 获取 default tag（第一个 tag）
+  const getDefaultTag = (operation: O[keyof O]): T[keyof T] => {
+    const tags = operationTags[operation];
+    return tags[0];
+  };
+
+  const createRecord = (operation: O[keyof O]): TagRecord<O, T> => {
+    const defaultTag = getDefaultTag(operation);
+    return {
+      operation,
+      tags: {
+        [defaultTag]: true
+      } as TagRecords<T>
+    };
+  };
+
+  return <>
+    <Dialog.Root open={open()} onOpenChange={(details) => !details.open && onClose()}>
+      <Portal>
+        <Dialog.Backdrop class="fixed inset-0 bg-black/50 z-40" />
+        <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4 z-40">
+          <Dialog.Content class="bg-white rounded-lg shadow-xl p-4 w-[90%] sm:w-3/4 md:w-1/2 max-h-[80%] flex flex-col">
+            <Dialog.Title class="text-xl font-semibold mb-2">{title}</Dialog.Title>
+            <div class="flex flex-col gap-4 overflow-y-auto">
+              {/* 如果提供了 levelOperationMap，按照 level 分组显示 */}
+              {levelOperationMap ? (
+                <>
+                  <For each={levelOperationMap.levelKeys}>{(levelKey, idx) => {
+                    const level = levelOperationMap.levels[levelKey];
+                    const operations = levelOperationMap.map[level];
+                    return <>
+                      <div class="flex flex-col gap-2">
+                        <span class="font-medium">第 {levelNum(level as Level)} 层：{level}</span>
+                        <div class="flex flex-wrap gap-2">
+                          <For each={operations}>{(operation) => {
+                            const defaultTag = getDefaultTag(operation as O[keyof O]);
+                            return <>
+                              <button
+                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                                onClick={() => {
+                                  onAddRecord(createRecord(operation as O[keyof O]));
+                                  onClose();
+                                }}
+                              >
+                                {defaultTag ? `${operation}（${defaultTag}）` : operation}
+                              </button>
+                            </>
+                          }}</For>
+                        </div>
+                      </div>
+                    </>
+                  }}</For>
+                  {/* 如果提供了 extraOperations，显示额外操作 */}
+                  {extraOperations && (
+                    <div class="flex flex-col gap-2">
+                      <span class="font-medium">{extraOperations.label}</span>
+                      <div class="flex flex-wrap gap-2">
+                        <For each={extraOperations.operations}>{(operation) => <>
+                          <button
+                            class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                            onClick={() => {
+                              onAddRecord(createRecord(operation as O[keyof O]));
+                              onClose();
+                            }}
+                          >
+                            {operation}
+                          </button>
+                        </>}</For>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* 如果没有提供 levelOperationMap，直接显示所有 operations */
+                <div class="flex flex-wrap gap-2">
+                  <For each={enumValues(operationEnum)}>{(operation) => <>
+                    <button
+                      class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                      onClick={() => {
+                        onAddRecord(createRecord(operation as O[keyof O]));
+                        onClose();
+                      }}
+                    >
+                      {operation}
+                    </button>
+                  </>}</For>
+                </div>
+              )}
+            </div>
+            <div class="flex gap-4 justify-end mt-4">
+              <Dialog.CloseTrigger class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">关闭</Dialog.CloseTrigger>
+            </div>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog.Root>
+  </>
 }
