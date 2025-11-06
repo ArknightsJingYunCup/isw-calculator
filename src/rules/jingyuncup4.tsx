@@ -6,7 +6,13 @@ import { Portal } from "solid-js/web";
 import { createStore, produce } from "solid-js/store";
 import { enumKeys, enumValues, readJson, saveJson, StringEnum } from "../lib/utils";
 import { createMediaQuery } from "@solid-primitives/media";
-import { AddDefaultModifierRecordModal, Card, createCollectibleInput, createModifierRecordTable, createWithdrawInput, EnumMultiSelectInput, EnumSelectInput, EnumToggleGroup, FullOperationModifierMap, LevelModifierRecord, LevelOperationListMap, ModifierRecord, ModifierSelector, NumberInput, OperationModifierMap } from "../components";
+import { AddDefaultTagRecordModal, Card, createCollectibleInput, createTagRecordTable, createWithdrawInput, EnumMultiSelectInput, EnumToggleGroup, LevelModifierRecord, LevelOperationListMap, ModifierSelector, NumberInput, OperationModifierMap, TagRecord, TagRecords, OperationModifiers } from "../components";
+
+enum TagType {
+  Boolean = "Boolean",
+  Number = "Number",
+}
+
 
 export function levelNum(level: Level): number {
   return enumValues(Level).indexOf(level) + 1;
@@ -112,13 +118,13 @@ export enum Level {
 }
 const levelKeys: (keyof typeof Level)[] = enumKeys(Level);
 // 紧急作战只显示 4、5、6 层
-enum EmergencyLevel {
+enum OperationLevel {
   Fourth = "汝吾门",
   Fifth = "见字祠",
   Sixth = "始末陵/明灭顶",
 }
-const emergencyLevelKeys: (keyof typeof EmergencyLevel)[] = enumKeys(EmergencyLevel);
-enum EmergencyOperation {
+const emergencyLevelKeys: (keyof typeof OperationLevel)[] = enumKeys(OperationLevel);
+enum Operation {
   峥嵘战功 = "峥嵘战功",
   赶场戏班 = "赶场戏班",
   青山不语 = "青山不语",
@@ -129,29 +135,27 @@ enum EmergencyOperation {
   炎灼 = "炎灼",
   人镇 = "人镇",
   借力打力 = "借力打力",
-  普通越山海 = "普通越山海",
   越山海 = "越山海",
   其他 = "其他",
 }
 
-const levelEmergencyOperationMap: LevelOperationListMap<typeof EmergencyLevel, typeof EmergencyOperation> = {
-  [EmergencyLevel.Fourth]: [
-    EmergencyOperation.峥嵘战功,
-    EmergencyOperation.赶场戏班,
+const levelOperationMap: LevelOperationListMap<typeof OperationLevel, typeof Operation> = {
+  [OperationLevel.Fourth]: [
+    Operation.峥嵘战功,
+    Operation.赶场戏班,
   ],
-  [EmergencyLevel.Fifth]: [
-    EmergencyOperation.青山不语,
-    EmergencyOperation.离域检查,
-    EmergencyOperation.薄礼一份,
-    EmergencyOperation.邙山镇地方志,
-    EmergencyOperation.不成烟火,
+  [OperationLevel.Fifth]: [
+    Operation.青山不语,
+    Operation.离域检查,
+    Operation.薄礼一份,
+    Operation.邙山镇地方志,
+    Operation.不成烟火,
   ],
-  [EmergencyLevel.Sixth]: [
-    EmergencyOperation.炎灼,
-    EmergencyOperation.人镇,
-    EmergencyOperation.借力打力,
-    EmergencyOperation.越山海,
-    EmergencyOperation.普通越山海,
+  [OperationLevel.Sixth]: [
+    Operation.炎灼,
+    Operation.人镇,
+    Operation.借力打力,
+    Operation.越山海,
   ]
 }
 
@@ -191,71 +195,99 @@ const emergencyOperationBaseScore = 50;
 // 无漏通过以下紧急关时，获得对应分数
 // 无漏定义为：关卡内未损失目标生命值，且摧毁所有雕伥。非无漏时，紧急作战加分降为原有的50%
 
-enum EmergencyOperationModifier {
+enum OperationTag {
   default = "",
   emergency = "紧急",
   perfect = "无漏",
 }
 
-// 使用 Modifier 系统定义紧急作战的加分规则
-// 注意：Modifier 的定义顺序很重要，系统会自动确保按照枚举定义顺序应用
-const emergencyOperationModifierMap: FullOperationModifierMap<typeof EmergencyOperation, typeof EmergencyOperationModifier> = {
-  [EmergencyOperation.峥嵘战功]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
-  },
-  [EmergencyOperation.赶场戏班]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
-  },
-  [EmergencyOperation.青山不语]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
-  },
-  [EmergencyOperation.离域检查]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
-  },
-  [EmergencyOperation.薄礼一份]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 40,
-  },
-  [EmergencyOperation.邙山镇地方志]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
-  },
-  [EmergencyOperation.不成烟火]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 50,
-  },
-  [EmergencyOperation.炎灼]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
-  },
-  [EmergencyOperation.人镇]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 60,
-  },
-  [EmergencyOperation.借力打力]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 70,
-  },
-  // 普通 + 0 无漏 + 30
-  // 紧急 + 50 无漏 + 100
-  [EmergencyOperation.普通越山海]: {
-    [EmergencyOperationModifier.default]: (v: number) => v,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 30,
-  },
-  [EmergencyOperation.越山海]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-    [EmergencyOperationModifier.perfect]: (v: number) => v + 100,
-  },
-  [EmergencyOperation.其他]: {
-    [EmergencyOperationModifier.emergency]: (v: number) => v + emergencyOperationBaseScore,
-  },
+// 决定了此 Tag 的输入控件类型
+const operationTagTypeMap: { [key in OperationTag]: TagType } = {
+  [OperationTag.default]: TagType.Boolean,
+  [OperationTag.emergency]: TagType.Boolean,
+  [OperationTag.perfect]: TagType.Boolean,
 }
 
-type EmergencyOperationRecord = ModifierRecord<typeof EmergencyOperation, typeof EmergencyOperationModifier>;
+// 决定了输入的时候的 ToggleGroup 选项，以及名称
+// 第一个 Modifier 为默认，Operation 被添加则带有此 Modifier，移除即移除整条记录，且显示为 Operation 名称与第一个 Modifier 的拼接
+const OperationTags: { [key in Operation]: OperationTag[] } = {
+  [Operation.峥嵘战功]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.赶场戏班]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.青山不语]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.离域检查]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.薄礼一份]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.邙山镇地方志]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.不成烟火]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.炎灼]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.人镇]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.借力打力]: [OperationTag.emergency, OperationTag.perfect],
+  [Operation.越山海]: [OperationTag.default, OperationTag.emergency, OperationTag.perfect],
+  [Operation.其他]: [OperationTag.emergency, OperationTag.perfect],
+}
+
+// 通用的 Tag 加法 Modifier 创建函数
+const createTagAddModifier = <T extends StringEnum>(tag: T[keyof T], value: number) =>
+  (v: number, tags: TagRecords<T>) => tags[tag] ? v + value : v;
+
+const emergencyBaseScoreModifier = createTagAddModifier(OperationTag.emergency, emergencyOperationBaseScore);
+
+// 由 Tag 依次应用 Modifiers 得到最终分数
+const emergencyOperationModifiers: OperationModifiers<typeof Operation, typeof OperationTag> = {
+  [Operation.峥嵘战功]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 40),
+  ],
+  [Operation.赶场戏班]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 40),
+  ],
+  [Operation.青山不语]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 60),
+  ],
+  [Operation.离域检查]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 40),
+  ],
+  [Operation.薄礼一份]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 40),
+  ],
+  [Operation.邙山镇地方志]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 60),
+  ],
+  [Operation.不成烟火]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 50),
+  ],
+  [Operation.炎灼]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 60),
+  ],
+  [Operation.人镇]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 60),
+  ],
+  [Operation.借力打力]: [
+    emergencyBaseScoreModifier,
+    createTagAddModifier(OperationTag.perfect, 70),
+  ],
+  [Operation.越山海]: [
+    emergencyBaseScoreModifier,
+    (v: number, tags: TagRecords<typeof OperationTag>) => {
+      if (tags[OperationTag.perfect]) {
+        return v + (tags[OperationTag.emergency] ? 100 : 30);
+      }
+      return v;
+    }
+  ],
+  [Operation.其他]: [
+    emergencyBaseScoreModifier,
+  ],
+}
+
+type OperationRecord = TagRecord<typeof Operation, typeof OperationTag>;
 
 // MARK: SpecialEvent
 enum SpecialEvent {
@@ -265,18 +297,43 @@ enum SpecialEvent {
   易易鸭鸭 = "易易鸭鸭",
   紧急劫罚 = "紧急劫罚",
   生百相 = "生百相",
-  紧急硕果累累 = "紧急硕果累累",
+  硕果累累 = "硕果累累",
   以逸待劳 = "以逸待劳",
   喜从驼来 = "喜从驼来",
-  紧急硅基伥的宴席 = "紧急硅基伥的宴席",
-  紧急彻底失控 = "紧急彻底失控",
+  硅基伥的宴席 = "硅基伥的宴席",
+  彻底失控 = "彻底失控",
   为崖作伥 = "为崖作伥",
 }
 
-enum SpecialEventModifier {
+enum SpecialEventTag {
   default = "",
   emergency = "紧急",
   perfect = "无漏",
+  count = "坠崖数", // 为崖作伥专用
+}
+
+// 决定了此 Tag 的输入控件类型
+const specialEventTags: { [key in SpecialEventTag]: TagType } = {
+  [SpecialEventTag.default]: TagType.Boolean,
+  [SpecialEventTag.emergency]: TagType.Boolean,
+  [SpecialEventTag.perfect]: TagType.Boolean,
+  [SpecialEventTag.count]: TagType.Number,
+}
+
+// 决定了输入的时候的 ToggleGroup 选项，以及名称
+const SpecialEventOperationTags: { [key in SpecialEvent]: SpecialEventTag[] } = {
+  [SpecialEvent.源源不断]: [SpecialEventTag.default, SpecialEventTag.emergency, SpecialEventTag.perfect],
+  [SpecialEvent.闪闪发光]: [SpecialEventTag.default, SpecialEventTag.emergency, SpecialEventTag.perfect],
+  [SpecialEvent.循循善诱]: [SpecialEventTag.default, SpecialEventTag.emergency, SpecialEventTag.perfect],
+  [SpecialEvent.易易鸭鸭]: [SpecialEventTag.default, SpecialEventTag.emergency, SpecialEventTag.perfect],
+  [SpecialEvent.紧急劫罚]: [SpecialEventTag.default, SpecialEventTag.emergency, SpecialEventTag.perfect],
+  [SpecialEvent.生百相]: [SpecialEventTag.default, SpecialEventTag.perfect],
+  [SpecialEvent.硕果累累]: [SpecialEventTag.emergency, SpecialEventTag.perfect],
+  [SpecialEvent.以逸待劳]: [SpecialEventTag.default, SpecialEventTag.perfect],
+  [SpecialEvent.喜从驼来]: [SpecialEventTag.default, SpecialEventTag.perfect],
+  [SpecialEvent.硅基伥的宴席]: [SpecialEventTag.emergency, SpecialEventTag.perfect],
+  [SpecialEvent.彻底失控]: [SpecialEventTag.emergency, SpecialEventTag.perfect],
+  [SpecialEvent.为崖作伥]: [SpecialEventTag.default, SpecialEventTag.perfect, SpecialEventTag.count],
 }
 
 // 注意：Modifier 的定义顺序很重要！
@@ -292,73 +349,72 @@ enum SpecialEventModifier {
 // - 源源不断 普通非无漏 10分: 10 (50%)
 // - 源源不断 紧急无漏 30分: (10 + 5) * 2 = 30
 // - 源源不断 紧急非无漏 15分: 10 + 5 (50%)
-// - 为崖作伥 无漏 30分: (3 * 5) * 2 = 30 (假设坠崖数为5)
-// - 为崖作伥 非无漏 15分: 3 * 5 = 15 (50%)
+// - 为崖作伥 无漏 30分: (1.5 * 5) * 2 = 15 (假设坠崖数为5)
+// - 为崖作伥 非无漏 7.5分: 1.5 * 5 = 7.5 (50%)
 //
 // 特殊事件无漏定义：关卡内未损失目标生命值，击杀所有鸭/狗/熊/鼠/雕伥/宝箱
 // 非无漏时，特殊事件加分降为原有的50%
-const specialEventModifierMap: FullOperationModifierMap<typeof SpecialEvent, typeof SpecialEventModifier> = {
-  [SpecialEvent.源源不断]: {
-    [SpecialEventModifier.default]: (v: number) => v + 10,  // 基础 50%
-    [SpecialEventModifier.emergency]: (v: number) => v + 5,  // 紧急额外 +5
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,   // 无漏翻倍
-  },
-  [SpecialEvent.闪闪发光]: {
-    [SpecialEventModifier.default]: (v: number) => v + 10,
-    [SpecialEventModifier.emergency]: (v: number) => v + 5,
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.循循善诱]: {
-    [SpecialEventModifier.default]: (v: number) => v + 10,  // 普通 20
-    [SpecialEventModifier.emergency]: (v: number) => v + 15, // 紧急 50 (10+15)*2
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.易易鸭鸭]: {
-    [SpecialEventModifier.default]: (v: number) => v + 25,  // 普通 50
-    [SpecialEventModifier.emergency]: (v: number) => v + 25, // 紧急 100 (25+25)*2
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.紧急劫罚]: {
-    [SpecialEventModifier.default]: (v: number) => v + 0,   // 无普通版本
-    [SpecialEventModifier.emergency]: (v: number) => v + 30, // 紧急 60 (0+30)*2
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.生百相]: {
-    [SpecialEventModifier.default]: (v: number) => v + 20,  // 普通 40
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.紧急硕果累累]: {
-    [SpecialEventModifier.default]: (v: number) => v + 0,
-    [SpecialEventModifier.emergency]: (v: number) => v + 30, // 紧急 60
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.以逸待劳]: {
-    [SpecialEventModifier.default]: (v: number) => v + 30,  // 普通 60 (不包括紧急)
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.喜从驼来]: {
-    [SpecialEventModifier.default]: (v: number) => v + 15,  // 普通 30
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.紧急硅基伥的宴席]: {
-    [SpecialEventModifier.default]: (v: number) => v + 0,
-    [SpecialEventModifier.emergency]: (v: number) => v + 25, // 紧急 50
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.紧急彻底失控]: {
-    [SpecialEventModifier.default]: (v: number) => v + 0,
-    [SpecialEventModifier.emergency]: (v: number) => v + 30, // 紧急 60
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,
-  },
-  [SpecialEvent.为崖作伥]: {
-    [SpecialEventModifier.default]: (v: number) => v,
-    [SpecialEventModifier.perfect]: (v: number) => v * 2,   // 为崖作伥也受无漏影响
-    // 基础分数由 extraData.count 计算: 3 * count
-    // 无漏时: 3 * count * 2
-  },
+const perfectDoubleModifier = (v: number, tags: TagRecords<typeof SpecialEventTag>) => tags[SpecialEventTag.perfect] ? v * 2 : v;
+
+const specialEventModifiers: OperationModifiers<typeof SpecialEvent, typeof SpecialEventTag> = {
+  [SpecialEvent.源源不断]: [
+    createTagAddModifier(SpecialEventTag.default, 10),   // 普通 10
+    createTagAddModifier(SpecialEventTag.emergency, 5),  // 紧急 15 = 10 + 5
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.闪闪发光]: [
+    createTagAddModifier(SpecialEventTag.default, 10),   // 普通 10
+    createTagAddModifier(SpecialEventTag.emergency, 5),  // 紧急 15 = 10 + 5
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.循循善诱]: [
+    createTagAddModifier(SpecialEventTag.default, 10),   // 普通 10
+    createTagAddModifier(SpecialEventTag.emergency, 15), // 紧急 25 = 10 + 15
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.易易鸭鸭]: [
+    createTagAddModifier(SpecialEventTag.default, 25),   // 普通 25
+    createTagAddModifier(SpecialEventTag.emergency, 25), // 紧急 50 = 25 + 25
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.紧急劫罚]: [
+    createTagAddModifier(SpecialEventTag.emergency, 30), // 紧急 30
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.生百相]: [
+    createTagAddModifier(SpecialEventTag.default, 20),   // 普通 20
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.硕果累累]: [
+    createTagAddModifier(SpecialEventTag.emergency, 30), // 紧急 30
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.以逸待劳]: [
+    createTagAddModifier(SpecialEventTag.default, 30),   // 普通 30
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.喜从驼来]: [
+    createTagAddModifier(SpecialEventTag.default, 15),   // 普通 15
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.硅基伥的宴席]: [
+    createTagAddModifier(SpecialEventTag.emergency, 25), // 紧急 25
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.彻底失控]: [
+    createTagAddModifier(SpecialEventTag.emergency, 30), // 紧急 30
+    perfectDoubleModifier,
+  ],
+  [SpecialEvent.为崖作伥]: [
+    (v: number, tags: TagRecords<typeof SpecialEventTag>) => {
+      const count = typeof tags[SpecialEventTag.count] === 'number' ? tags[SpecialEventTag.count] : 0;
+      return v + count * 1.5;  // 1.5 * count
+    },
+    perfectDoubleModifier,
+  ],
 }
 
-type SpecialEventRecord = ModifierRecord<typeof SpecialEvent, typeof SpecialEventModifier>;
+type SpecialEventRecord = TagRecord<typeof SpecialEvent, typeof SpecialEventTag>;
 
 // MARK: ChaosNode (是非境祸乱)
 enum ChaosNode {
@@ -366,22 +422,33 @@ enum ChaosNode {
   迷惘 = "迷惘",
 }
 
-enum ChaosNodeModifier {
+enum ChaosNodeTags {
   perfect = "无漏",
+}
+
+// 决定了此 Tag 的输入控件类型
+const chaosNodeTagTypeMap: { [key in ChaosNodeTags]: TagType } = {
+  [ChaosNodeTags.perfect]: TagType.Boolean,
+}
+
+// 决定了输入的时候的 ToggleGroup 选项，以及名称
+const ChaosNodeOperationTags: { [key in ChaosNode]: ChaosNodeTags[] } = {
+  [ChaosNode.地有四难]: [ChaosNodeTags.perfect],
+  [ChaosNode.迷惘]: [ChaosNodeTags.perfect],
 }
 
 // 是非境祸乱加分规则
 // 仅无漏通过时获得对应分数
-const chaosNodeModifierMap: FullOperationModifierMap<typeof ChaosNode, typeof ChaosNodeModifier> = {
-  [ChaosNode.地有四难]: {
-    [ChaosNodeModifier.perfect]: (v: number) => v + 30,
-  },
-  [ChaosNode.迷惘]: {
-    [ChaosNodeModifier.perfect]: (v: number) => v + 30,
-  },
+const chaosNodeModifiers: OperationModifiers<typeof ChaosNode, typeof ChaosNodeTags> = {
+  [ChaosNode.地有四难]: [
+    createTagAddModifier(ChaosNodeTags.perfect, 30),
+  ],
+  [ChaosNode.迷惘]: [
+    createTagAddModifier(ChaosNodeTags.perfect, 30),
+  ],
 }
 
-type ChaosNodeRecord = ModifierRecord<typeof ChaosNode, typeof ChaosNodeModifier>;
+type ChaosNodeRecord = TagRecord<typeof ChaosNode, typeof ChaosNodeTags>;
 
 // MARK: Store
 type TmpOperatorsCnt = {
@@ -399,7 +466,7 @@ type BossRecords = LevelModifierRecord<typeof BossLevel, typeof BonusBossOperati
 type Store = {
   squad: OpeningSquad,
   limitedOperators: LimitedOperator[],
-  emergencyRecords: EmergencyOperationRecord[],
+  operationRecords: OperationRecord[],
   specialEventRecords: SpecialEventRecord[],
   chaosNodeRecords: ChaosNodeRecord[],
   bossRecords: BossRecords,
@@ -422,63 +489,100 @@ const createTestStoreValue = (): Store => ({
   limitedOperators: [
     LimitedOperator.电弧
   ],
-  emergencyRecords: [
+  operationRecords: [
     {
-      operation: EmergencyOperation.峥嵘战功,
-      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
+      operation: Operation.峥嵘战功,
+      tags: {
+        [OperationTag.emergency]: true,
+        [OperationTag.perfect]: true,
+      },
     },
     {
-      operation: EmergencyOperation.赶场戏班,
-      modifiers: [EmergencyOperationModifier.default],
+      operation: Operation.赶场戏班,
+      tags: {
+        [OperationTag.emergency]: true,
+      },
     },
     {
-      operation: EmergencyOperation.青山不语,
-      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
+      operation: Operation.青山不语,
+      tags: {
+        [OperationTag.emergency]: true,
+        [OperationTag.perfect]: true,
+      },
     },
     {
-      operation: EmergencyOperation.越山海,
-      modifiers: [EmergencyOperationModifier.default, EmergencyOperationModifier.perfect],
+      operation: Operation.越山海,
+      tags: {
+        [OperationTag.default]: true,
+        [OperationTag.perfect]: true,
+      },
     }
   ],
   specialEventRecords: [
     {
       operation: SpecialEvent.源源不断,
-      modifiers: [SpecialEventModifier.default, SpecialEventModifier.perfect], // 普通无漏: (10) * 2 = 20
+      tags: {
+        [SpecialEventTag.default]: true,
+        [SpecialEventTag.perfect]: true,
+      }, // 普通无漏: (10) * 2 = 20
     },
     {
       operation: SpecialEvent.闪闪发光,
-      modifiers: [SpecialEventModifier.default, SpecialEventModifier.emergency], // 紧急非无漏: 10 + 5 = 15
+      tags: {
+        [SpecialEventTag.default]: true,
+        [SpecialEventTag.emergency]: true,
+      }, // 紧急非无漏: 10 + 5 = 15
     },
     {
       operation: SpecialEvent.易易鸭鸭,
-      modifiers: [SpecialEventModifier.default, SpecialEventModifier.emergency, SpecialEventModifier.perfect], // 紧急无漏: (25 + 25) * 2 = 100
+      tags: {
+        [SpecialEventTag.default]: true,
+        [SpecialEventTag.emergency]: true,
+        [SpecialEventTag.perfect]: true,
+      }, // 紧急无漏: (25 + 25) * 2 = 100
     },
     {
       operation: SpecialEvent.紧急劫罚,
-      modifiers: [SpecialEventModifier.default, SpecialEventModifier.emergency, SpecialEventModifier.perfect], // 紧急无漏: (0 + 30) * 2 = 60
+      tags: {
+        [SpecialEventTag.default]: true,
+        [SpecialEventTag.emergency]: true,
+        [SpecialEventTag.perfect]: true,
+      }, // 紧急无漏: (0 + 30) * 2 = 60
     },
     {
       operation: SpecialEvent.生百相,
-      modifiers: [SpecialEventModifier.default], // 普通非无漏: 20
+      tags: {
+        [SpecialEventTag.default]: true,
+      }, // 普通非无漏: 20
     },
     {
       operation: SpecialEvent.以逸待劳,
-      modifiers: [SpecialEventModifier.default, SpecialEventModifier.perfect], // 普通无漏: 30 * 2 = 60
+      tags: {
+        [SpecialEventTag.default]: true,
+        [SpecialEventTag.perfect]: true,
+      }, // 普通无漏: 30 * 2 = 60
     },
     {
       operation: SpecialEvent.为崖作伥,
-      modifiers: [SpecialEventModifier.default, SpecialEventModifier.perfect],
-      extraData: { count: 5 }, // 无漏: 1.5 * 5 * 2 = 15, 非无漏: 1.5 * 5 = 7.5
+      tags: {
+        [SpecialEventTag.default]: true,
+        [SpecialEventTag.perfect]: true,
+        [SpecialEventTag.count]: 5,
+      }, // 无漏: 1.5 * 5 * 2 = 15, 非无漏: 1.5 * 5 = 7.5
     }
   ],
   chaosNodeRecords: [
     {
       operation: ChaosNode.地有四难,
-      modifiers: [ChaosNodeModifier.perfect],
+      tags: {
+        [ChaosNodeTags.perfect]: true,
+      },
     },
     {
       operation: ChaosNode.迷惘,
-      modifiers: [ChaosNodeModifier.perfect],
+      tags: {
+        [ChaosNodeTags.perfect]: true,
+      },
     }
   ],
   bossRecords: {
@@ -509,7 +613,7 @@ const createTestStoreValue = (): Store => ({
 const createDefaultStoreValue = (): Store => ({
   squad: OpeningSquad.其他,
   limitedOperators: [],
-  emergencyRecords: [],
+  operationRecords: [],
   specialEventRecords: [],
   chaosNodeRecords: [],
   bossRecords: {
@@ -723,57 +827,59 @@ export function JingYunCup4() {
     </Card>
   </>
 
-  // MARK: UI: 紧急作战
-  const [emergencyOpen, setEmergencyOpen] = createSignal(false);
-  const addEmergencyRecord = (record: EmergencyOperationRecord) => {
-    setStore('emergencyRecords', (operations) => [...operations, record])
+  // MARK: UI: 作战
+  const [operationOpen, setOperationOpen] = createSignal(false);
+  const addOperationRecord = (record: OperationRecord) => {
+    setStore('operationRecords', (operations) => [...operations, record])
   }
-  const updateEmergencyRecord = (idx: number, record: EmergencyOperationRecord) => {
-    setStore('emergencyRecords', idx, record)
+  const updateOperationRecord = (idx: number, record: OperationRecord) => {
+    setStore('operationRecords', idx, record)
   }
-  const removeEmergencyRecord = (idx: number) => {
-    setStore('emergencyRecords', (operations) => operations.filter((_, i) =>
+  const removeOperationRecord = (idx: number) => {
+    setStore('operationRecords', (operations) => operations.filter((_, i) =>
       i !== idx
     ))
   }
 
-  const { score: emergencyScore, ui: emergencyUI } = createModifierRecordTable({
-    records: () => store.emergencyRecords,
-    operationModifierMap: emergencyOperationModifierMap,
-    onUpdateRecord: updateEmergencyRecord,
-    onRemoveRecord: removeEmergencyRecord,
+  const { score: operationScore, ui: operationUI } = createTagRecordTable({
+    records: () => store.operationRecords,
+    operationModifiers: emergencyOperationModifiers,
+    operationTags: OperationTags,
+    operationTagTypeMap: operationTagTypeMap,
+    onUpdateRecord: updateOperationRecord,
+    onRemoveRecord: removeOperationRecord,
   });
 
-  const EmergencyCard = () => <>
-    <AddDefaultModifierRecordModal
-      open={emergencyOpen}
-      onClose={() => setEmergencyOpen(false)}
-      onAddRecord={addEmergencyRecord}
-      title="添加紧急作战"
-      operationEnum={EmergencyOperation}
-      operationModifierMap={emergencyOperationModifierMap}
+  const OperationCard = () => <>
+    <AddDefaultTagRecordModal
+      open={operationOpen}
+      onClose={() => setOperationOpen(false)}
+      onAddRecord={addOperationRecord}
+      title="添加作战"
+      operationEnum={Operation}
+      operationTags={OperationTags}
       levelOperationMap={{
-        levels: EmergencyLevel,
+        levels: OperationLevel,
         levelKeys: emergencyLevelKeys,
-        map: levelEmergencyOperationMap
+        map: levelOperationMap
       }}
       extraOperations={{
         label: "其他",
-        operations: [EmergencyOperation.其他]
+        operations: [Operation.其他]
       }}
     />
     <Card>
       <div class="flex items-center gap-4">
-        <h6 class="text-xl font-semibold">紧急作战</h6>
+        <h6 class="text-xl font-semibold">作战</h6>
         <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
-          setEmergencyOpen(true)
+          setOperationOpen(true)
         }}>
           添加
         </button>
         <div class="flex-grow" />
-        <span>分数: {emergencyScore().toFixed(2)}</span>
+        <span>分数: {operationScore().toFixed(2)}</span>
       </div>
-      {emergencyUI()}
+      {operationUI()}
     </Card>
   </>
 
@@ -789,60 +895,23 @@ export function JingYunCup4() {
     setStore('specialEventRecords', (records) => records.filter((_, i) => i !== idx))
   }
 
-  const { score: specialEventScore, ui: specialEventUI } = createModifierRecordTable({
+  const { score: specialEventScore, ui: specialEventUI } = createTagRecordTable({
     records: () => store.specialEventRecords,
-    operationModifierMap: specialEventModifierMap,
+    operationModifiers: specialEventModifiers,
+    operationTags: SpecialEventOperationTags,
+    operationTagTypeMap: specialEventTags,
     onUpdateRecord: updateSpecialEventRecord,
     onRemoveRecord: removeSpecialEventRecord,
-    calculateScore: (record) => {
-      // 为崖作伥特殊计算：先计算基础分，再应用 modifiers（包括 perfect）
-      if (record.operation === SpecialEvent.为崖作伥) {
-        const count = record.extraData?.count || 0;
-        const baseScore = count * 1.5;
-        // 应用 modifiers（如 perfect 翻倍）
-        return record.modifiers.reduce((sum, modifier) => {
-          return specialEventModifierMap[record.operation][modifier]!(sum);
-        }, baseScore);
-      }
-      // 其他事件使用默认计算
-      return record.modifiers.reduce((sum, modifier) => {
-        return specialEventModifierMap[record.operation][modifier]!(sum);
-      }, 0);
-    },
-    extraUI: (record, idx, onUpdate) => {
-      // 为崖作伥额外显示数量输入
-      if (record.operation === SpecialEvent.为崖作伥) {
-        return (
-          <div class="flex items-center gap-2 border border-gray-300 rounded px-2">
-            <span class="text-sm text-gray-600">坠崖数:</span>
-            <input
-              placeholder="坠崖数"
-              type="number"
-              class="w-16 px-2 py-1 text-sm border-none focus:outline-none"
-              value={record.extraData?.count || 0}
-              onInput={(e) => {
-                const count = parseInt(e.currentTarget.value) || 0;
-                onUpdate({
-                  ...record,
-                  extraData: { count }
-                });
-              }}
-            />
-          </div>
-        );
-      }
-      return null;
-    }
   });
 
   const SpecialEventCard = () => <>
-    <AddDefaultModifierRecordModal
+    <AddDefaultTagRecordModal
       open={specialEventOpen}
       onClose={() => setSpecialEventOpen(false)}
       onAddRecord={addSpecialEventRecord}
       title="添加特殊事件"
       operationEnum={SpecialEvent}
-      operationModifierMap={specialEventModifierMap}
+      operationTags={SpecialEventOperationTags}
     />
     <Card>
       <div class="flex items-center gap-4">
@@ -871,21 +940,23 @@ export function JingYunCup4() {
     setStore('chaosNodeRecords', (records) => records.filter((_, i) => i !== idx))
   }
 
-  const { score: chaosNodeScore, ui: chaosNodeUI } = createModifierRecordTable({
+  const { score: chaosNodeScore, ui: chaosNodeUI } = createTagRecordTable({
     records: () => store.chaosNodeRecords,
-    operationModifierMap: chaosNodeModifierMap,
+    operationModifiers: chaosNodeModifiers,
+    operationTags: ChaosNodeOperationTags,
+    operationTagTypeMap: chaosNodeTagTypeMap,
     onUpdateRecord: updateChaosNodeRecord,
     onRemoveRecord: removeChaosNodeRecord,
   });
 
   const ChaosNodeCard = () => <>
-    <AddDefaultModifierRecordModal
+    <AddDefaultTagRecordModal
       open={chaosNodeOpen}
       onClose={() => setChaosNodeOpen(false)}
       onAddRecord={addChaosNodeRecord}
       title="添加是非境祸乱"
       operationEnum={ChaosNode}
-      operationModifierMap={chaosNodeModifierMap}
+      operationTags={ChaosNodeOperationTags}
     />
     <Card>
       <div class="flex items-center gap-4">
@@ -988,7 +1059,7 @@ export function JingYunCup4() {
   // 计算各 Tab 的分数
   const tabScoreMap: { [key in Tab]: () => number } = {
     [Tab.Squad]: () => calcLimitedOperatorsSum(),
-    [Tab.Operation]: () => emergencyScore() + specialEventScore() + chaosNodeScore() + bossScore(),
+    [Tab.Operation]: () => operationScore() + specialEventScore() + chaosNodeScore() + bossScore(),
     [Tab.Others]: () => collectiblesScore() + withdrawScore() + tmpOperatorScore() + hiddensScore(),
   };
   const calcTotalSum = () => {
@@ -1036,7 +1107,7 @@ export function JingYunCup4() {
           <div class="flex flex-col flex-grow gap-2 overflow-y-auto p-2">
             <Switch>
               <Match when={tab() == Tab.Operation}>
-                <EmergencyCard />
+                <OperationCard />
                 <SpecialEventCard />
                 <ChaosNodeCard />
                 {bossUI()}
@@ -1139,7 +1210,7 @@ export function JingYunCup4() {
             </span> */}
             <OpeningCard />
             <LimitedOperatorsPart />
-            <EmergencyCard />
+            <OperationCard />
             <SpecialEventCard />
             <ChaosNodeCard />
             {bossUI()}
