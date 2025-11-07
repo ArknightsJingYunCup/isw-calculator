@@ -489,11 +489,26 @@ export function AddDefaultTagRecordModal<L extends StringEnum, O extends StringE
                       </div>
                     </>
                   }}</For>
+                  <div class="flex flex-col gap-2">
+                    <span class="font-medium">其他：</span>
+                    <div class="flex flex-wrap gap-2">
+                      {extraOperations && (
+                        <div class="flex flex-wrap gap-2">
+                          <For each={extraOperations.operations}>{(operation) => operationButton(operation)}</For>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </>
               ) : (
                 /* 如果没有提供 levelOperationMap，直接显示所有 operations */
                 <div class="flex flex-wrap gap-2">
                   <For each={enumValues(operationEnum)}>{(operation) => operationButton(operation)}</For>
+                  {extraOperations && (
+                    <div class="flex flex-wrap gap-2">
+                      <For each={extraOperations.operations}>{(operation) => operationButton(operation)}</For>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
