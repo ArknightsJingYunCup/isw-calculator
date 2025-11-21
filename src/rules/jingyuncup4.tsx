@@ -29,50 +29,52 @@ enum LimitedOperator {
   酒神 = "酒神",
   水月 = "水月",
   灵知 = "灵知",
+  圣聆初雪 = "圣聆初雪",
+  娜仁图亚 = "娜仁图亚",
   玛恩纳 = "玛恩纳",
   隐德来希 = "隐德来希",
   逻各斯 = "逻各斯",
   阿斯卡纶 = "阿斯卡纶",
-  娜仁图亚 = "娜仁图亚",
   琳琅诗怀雅 = "琳琅诗怀雅",
-  初雪 = "初雪",
-  凯尔希 = "凯尔希",
+  凛御银灰 = "凛御银灰",
   迷迭香 = "迷迭香",
-  银灰 = "银灰",
+  凯尔希 = "凯尔希",
   霍尔海雅 = "霍尔海雅",
   安洁莉娜 = "安洁莉娜",
   麒麟R夜刀 = "麒麟R夜刀",
   伊内丝 = "伊内丝",
   空弦 = "空弦",
   妮芙 = "妮芙",
+  艾拉 = "艾拉",
 }
 
 const limitedOperatorCostMap: { [key in LimitedOperator]: number } = {
   [LimitedOperator.电弧]: 7,
   [LimitedOperator.新约能天使]: 5,
   [LimitedOperator.维什戴尔]: 5,
-  [LimitedOperator.丰川祥子]: 5,
-  [LimitedOperator.司霆惊蛰]: 5,
+  [LimitedOperator.丰川祥子]: 4,
+  [LimitedOperator.司霆惊蛰]: 4,
   [LimitedOperator.斩业星熊]: 4,
   [LimitedOperator.酒神]: 4,
   [LimitedOperator.水月]: 4,
   [LimitedOperator.灵知]: 4,
+  [LimitedOperator.圣聆初雪]: 4,
+  [LimitedOperator.娜仁图亚]: 4,
   [LimitedOperator.玛恩纳]: 3,
   [LimitedOperator.隐德来希]: 3,
   [LimitedOperator.逻各斯]: 3,
   [LimitedOperator.阿斯卡纶]: 3,
-  [LimitedOperator.娜仁图亚]: 3,
   [LimitedOperator.琳琅诗怀雅]: 3,
-  [LimitedOperator.初雪]: 3,
-  [LimitedOperator.凯尔希]: 2,
+  [LimitedOperator.凛御银灰]: 3,
   [LimitedOperator.迷迭香]: 2,
-  [LimitedOperator.银灰]: 2,
-  [LimitedOperator.霍尔海雅]: 2,
+  [LimitedOperator.凯尔希]: 1,
+  [LimitedOperator.霍尔海雅]: 1,
   [LimitedOperator.安洁莉娜]: 1,
   [LimitedOperator.麒麟R夜刀]: 1,
   [LimitedOperator.伊内丝]: 1,
   [LimitedOperator.空弦]: 1,
   [LimitedOperator.妮芙]: 1,
+  [LimitedOperator.艾拉]: 1,
 };
 
 enum Squad {
@@ -99,12 +101,12 @@ enum Squad {
 
 enum OpeningSquad {
   其他 = "其他",
-  游客分队 = "游客分队",
+  棋行险着游客分队 = "棋行险着/游客分队",
 }
 
 const openingSquadFactorMap: { [key in OpeningSquad]: number } = {
   [OpeningSquad.其他]: 0,
-  [OpeningSquad.游客分队]: -0.1,
+  [OpeningSquad.棋行险着游客分队]: -0.05,
 };
 
 // MARK: EmergencyOperation
@@ -816,15 +818,36 @@ export function JingYunCup4() {
   const OpeningCard: Component = () => <>
     <Card>
       <h6 class="text-xl font-semibold">开局分队</h6>
+      <span>使用棋行险着/游客分队时，最终总分系数-0.05。</span>
       <div class="flex gap-2 sm:gap-4 flex-wrap justify-stretch">
         {EnumToggleGroup(
           OpeningSquad,
           () => store.squad,
           (v) => setStore("squad", v),
-          (v) => <span>{v}{v === OpeningSquad.游客分队 ? "（-0.1）" : ""}</span>
+          (v) => <span>{v}{v === OpeningSquad.棋行险着游客分队 ? "（-0.05）" : ""}</span>
         )}
       </div>
     </Card>
+  </>
+
+  // MARK: UI: 阵容规则
+  const LimitedOperatorsPart = () => <>
+    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
+      <div class="flex items-center gap-4">
+        <h6 class="text-xl font-semibold">阵容规则</h6>
+        <div class="flex-grow" />
+        <span>阵容消耗: <span class={calcLimitedOperatorCosts() > 10 ? "text-red-600" : "text-green-600"}>{calcLimitedOperatorCosts()} / 10</span></span>
+        <span>分数: {calcLimitedOperatorsSum()}</span>
+      </div>
+      <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣500分。</span>
+      <span>使用电弧时结算分系数-0.05。</span>
+      {EnumMultiSelectInput(
+        LimitedOperator,
+        () => store.limitedOperators,
+        (v) => setStore("limitedOperators", v),
+        (v) => <span>{v}（{limitedOperatorCostMap[v]}）</span>,
+      )}
+    </div>
   </>
 
   // MARK: UI: 作战
@@ -871,7 +894,7 @@ export function JingYunCup4() {
     <Card>
       <div class="flex items-center gap-4">
         <h6 class="text-xl font-semibold">作战</h6>
-        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm cursor-pointer" onClick={() => {
           setOperationOpen(true)
         }}>
           添加
@@ -916,7 +939,7 @@ export function JingYunCup4() {
     <Card>
       <div class="flex items-center gap-4">
         <h6 class="text-xl font-semibold">特殊事件</h6>
-        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm cursor-pointer" onClick={() => {
           setSpecialEventOpen(true)
         }}>
           添加
@@ -961,7 +984,7 @@ export function JingYunCup4() {
     <Card>
       <div class="flex items-center gap-4">
         <h6 class="text-xl font-semibold">是非境祸乱</h6>
-        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm" onClick={() => {
+        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm cursor-pointer" onClick={() => {
           setChaosNodeOpen(true)
         }}>
           添加
@@ -984,25 +1007,6 @@ export function JingYunCup4() {
     return Math.max(0, (calcLimitedOperatorCosts() - 10)) * -500;
   }
 
-  // MARK: UI: 阵容规则
-  const LimitedOperatorsPart = () => <>
-    <div class="flex flex-col gap-2 p-4 bg-white rounded-lg shadow shrink-0">
-      <div class="flex items-center gap-4">
-        <h6 class="text-xl font-semibold">阵容规则</h6>
-        <div class="flex-grow" />
-        <span>阵容消耗: <span class={calcLimitedOperatorCosts() > 10 ? "text-red-600" : "text-green-600"}>{calcLimitedOperatorCosts()} / 10</span></span>
-        <span>分数: {calcLimitedOperatorsSum()}</span>
-      </div>
-      <span>选手比赛中最多抓取总价值不超过10分的干员，每超过1分，扣500分。</span>
-      {EnumMultiSelectInput(
-        LimitedOperator,
-        () => store.limitedOperators,
-        (v) => setStore("limitedOperators", v),
-        (v) => <span>{v}（{limitedOperatorCostMap[v]}）</span>,
-      )}
-    </div>
-  </>
-
   // 1. 完成比赛时，每持有一个收藏品，额外加 5 分，上限750分。
   const { score: collectiblesScore, ui: collectiblesUI } = createCollectibleInput(
     () => store.collectiblesCnt, (v) => setStore("collectiblesCnt", v),
@@ -1021,14 +1025,17 @@ export function JingYunCup4() {
   const { score: hiddensScore, ui: hiddensUI } = createHiddensInput(
     () => store.hiddensCnt, (v) => setStore("hiddensCnt", v)
   );
-  // 5. 比赛时，每名选手的基础结算分倍率为1。使用游客分队比赛时，该倍率-0.1。抓取干员电弧时，该倍率-0.05。
-  const factor = () => {
-    return 1.0 +
-      openingSquadFactorMap[store.squad] +
-      (store.limitedOperators.includes(LimitedOperator.电弧) ? -0.05 : 0);
+  // 5. 比赛时，每名选手的基础结算分倍率为1。抓取干员电弧时，结算分系数-0.05。使用棋行险着/游客分队时，最终总分系数-0.05。
+  // 结算分系数：只受电弧影响
+  const settlementFactor = () => {
+    return 1.0 + (store.limitedOperators.includes(LimitedOperator.电弧) ? -0.05 : 0);
   }
   const factoredScore = () => {
-    return store.score * factor();
+    return store.score * settlementFactor();
+  }
+  // 最终总分系数：只受分队影响
+  const finalFactor = () => {
+    return 1.0 + openingSquadFactorMap[store.squad];
   }
 
   // MARK: UI: 结算 & 其他
@@ -1063,11 +1070,11 @@ export function JingYunCup4() {
     [Tab.Others]: () => collectiblesScore() + withdrawScore() + tmpOperatorScore() + hiddensScore(),
   };
   const calcTotalSum = () => {
+    const baseTotal = enumValues(Tab).reduce((sum, tab) => sum + tabScoreMap[tab](), 0) + factoredScore();
+    return baseTotal * finalFactor();
+  }
+  const baseTotalSum = () => {
     return enumValues(Tab).reduce((sum, tab) => sum + tabScoreMap[tab](), 0) + factoredScore();
-    // return emergencyScore() + specialEventScore() + chaosNodeScore() + bossScore() +
-    //   calcLimitedOperatorsSum() + collectiblesScore() +
-    //   withdrawScore() + tmpOperatorScore() + hiddensScore()
-    //   + factoredScore();
   }
 
   const [copyJsonOpen, setCopyJsonOpen] = createSignal(false);
@@ -1081,14 +1088,15 @@ export function JingYunCup4() {
         <div class="flex flex-col w-full gap-1">
           <label class="text-sm text-gray-600">结算分</label>
           <NumberInput class="w-full" value={() => store.score} setValue={(v) => setStore("score", v)} />
-          <span class="text-xs text-gray-500">{store.score} x {factor().toFixed(2)} = {factoredScore().toFixed(2)}</span>
+          <span class="text-xs text-gray-500">{store.score} x {settlementFactor().toFixed(2)} = {factoredScore().toFixed(2)}</span>
         </div>
       </div>
       <div class="flex gap-2 justify-between sm:flex-col max-w-full">
-        <div class="flex items-center">
+        <div class="flex flex-col">
           <span class="text-lg font-bold text-blue-600">
             总分：<span class="text-2xl">{calcTotalSum().toFixed(2)}</span>
           </span>
+          <span class="text-xs text-gray-500">{baseTotalSum().toFixed(2)} x {finalFactor().toFixed(2)} = {calcTotalSum().toFixed(2)}</span>
         </div>
         <div class="flex gap-2 flex-shrink-0">
           <button class="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium sm:px-3 sm:py-2" onClick={() => { setStore(createDefaultStoreValue()) }}>清零</button>
