@@ -98,7 +98,8 @@ export function MultiSelectInput<T>(
       <For each={items}>{(item) => {
         return <>
           <button
-            class="px-3 py-1 rounded border transition-colors"
+            type="button"
+            class="px-3 py-1 rounded border transition-colors cursor-pointer"
             classList={{
               "border-green-500 text-green-600 hover:bg-green-50": selected().includes(item),
               "border-gray-400 text-gray-600 hover:bg-gray-50": !selected().includes(item)
